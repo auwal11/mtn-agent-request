@@ -1,0 +1,33 @@
+# Render.com deployment config (alternative to PythonAnywhere)
+#
+# HOW TO USE:
+# 1. Sign up at https://render.com (free account)
+# 2. Dashboard -> New -> Blueprint -> connect your GitHub repo (auwal11/mtn-agent-request)
+# 3. Render will detect this render.yaml automatically and set everything up,
+#    including a persistent disk mounted at /data (so the SQLite DB, uploads,
+#    and generated ZIPs all survive restarts/redeploys).
+# 4. Click "Apply" - first deploy takes a few minutes.
+# 5. Your app will be live at the URL Render gives you (something like
+#    https://mtn-agent-dashboard.onrender.com)
+#
+# NOTE: Render's free web service tier spins down after inactivity and takes
+# ~30-50 seconds to wake back up on the next request - this is normal on free tier.
+
+services:
+  - type: web
+    name: mtn-agent-dashboard
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.9
+    disk:
+      name: mtn-agent-data
+      mountPath: /data
+      sizeGB: 1
