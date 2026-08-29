@@ -1,10 +1,14 @@
 {% extends "base.html" %}
+{% block title %}Partner Settings — RACU Agent Onboarding{% endblock %}
+{% block pagetitle %}Partner Settings{% endblock %}
+{% block pagesub %}One-time setup — details that stay the same across every batch{% endblock %}
+
 {% block content %}
 <div class="card">
-  <h2>Fara — Saita Bayanan Partner</h2>
-  <p>Wannan za a yi shi sau ɗaya kawai. Duk bayanan da suka canza daga batch zuwa batch (STDM, CEO/MD signature, NCC License) za a ajiye su nan.</p>
+  <h2>Partner Profile</h2>
+  <p class="desc">This is done once. Values that don't change from batch to batch (STDM name, CEO/MD signature, NCC License) are stored here.</p>
   <form method="post" enctype="multipart/form-data">
-    <label>Sunan Partner</label>
+    <label>Partner Name</label>
     <input name="name" required placeholder="RACU INTERNATIONAL LTD">
 
     <label>Dealer Code</label>
@@ -19,23 +23,24 @@
       <div><label>NCC License No.</label><input name="ncc_license_no" placeholder="CL/S&I/0177/2024"></div>
     </div>
 
-    <label>Adireshin Partner</label>
+    <label>Partner Address</label>
     <input name="address" placeholder="Block B16 Hamdam Plaza...">
 
-    <label>Sunan STDM (na dindindin)</label>
+    <label>STDM Name (fixed on every certificate)</label>
     <input name="stdm_name" placeholder="DAVID BUTU">
 
-    <label>Sunan CEO/MD (na dindindin)</label>
+    <label>CEO/MD Name (fixed on every recruitment form)</label>
     <input name="ceo_name" placeholder="IBRAHIM AHMAD">
 
-    <label>Sa hannun CEO/MD (hoto - PNG/JPG)</label>
+    <label>CEO/MD Signature (image — PNG/JPG)</label>
     <input type="file" name="ceo_signature_file" accept="image/*">
 
-    <label>Loda NCC License (PDF)</label>
+    <label>NCC License (PDF)</label>
     <input type="file" name="ncc_license_file" accept="application/pdf" required>
+    <p class="field-hint">Attached unchanged as Form 8 in every generated package.</p>
 
-    <br><br>
-    <button class="btn" type="submit">Ajiye Partner</button>
+    <br>
+    <button class="btn" type="submit">Save Partner Profile</button>
   </form>
 </div>
 {% endblock %}

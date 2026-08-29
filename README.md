@@ -1,105 +1,111 @@
 # RACU International — MTN Agent Onboarding Dashboard
 
-Cikakken tsari na dashboard wanda ke sarrafa saka bayanan agent, adana su a batch,
-sannan ya ƙirƙiri duk fayilolin PDF guda 7 + NCC License a matsayin ZIP guda ɗaya —
-kai tsaye ba tare da editing na hannu ba.
+A complete dashboard system that manages agent data entry, stores it in batches,
+and automatically generates all 7 required PDF forms + the NCC License into a
+single downloadable ZIP package — with no manual editing involved.
 
-## Menene ke ciki
+## What's Inside
 
-- **Flask web dashboard** (`app.py`) — saka partner, ƙara agents, duba batch, generate & download.
-- **Database** (SQLite, `database.py`) — ajiye partners, batches, da agents.
-- **Generators** (`generators/`) — kowanne form yana da nasa module:
-  - `form1_certificate.py` — Training Course Certificate (background-asset + vector text overlay)
+- **Flask web dashboard** (`app.py`) — set up the partner profile, add agents,
+  review the current batch, generate and download packages.
+- **Database** (SQLite, `database.py`) — stores partners, batches, and agents.
+- **Generators** (`generators/`) — each form has its own module:
+  - `form1_certificate.py` — Training Course Certificate (original background asset + vector text overlay)
   - `form2_authorisation.py` — Certificate of Authorisation
   - `form3_deduction.py` — Authorization for Deduction (₦5,000) + signature paste
-  - `form4_idcard.py` — MTN Agent ID Card (an gina daga sifili, tare da hoto)
-  - `form5_agent_form.py` — SIM Registration Agent & Outlet Recruitment Form (3-shafuka; layout na farko, ana buƙatar ƙarin daidaita coordinates kamar Form 1-3)
-  - `form6_form7_tables.py` — Approved Request & SSP Username Creation (table-style, an gina daga sifili)
-- **Batch engine** (`batch_engine.py`) — ya haɗa duk 7 forms + license PDF zuwa ZIP guda ɗaya.
+  - `form4_idcard.py` — MTN Agent ID Card (built from scratch, includes agent photo)
+  - `form5_agent_form.py` — SIM Registration Agent & Outlet Recruitment Form (3 pages; functional layout, visual calibration against the original still pending — see status table below)
+  - `form6_form7_tables.py` — Approved Request & SSP Username Creation (table-style, built from scratch)
+- **Batch engine** (`batch_engine.py`) — combines all 7 forms + the license PDF into one ZIP.
 
-## Yadda za a Gudanar (Run Locally)
+## Running Locally
 
 ```bash
-cd mtn_dashboard
+cd mtn-agent-request
 pip install -r requirements.txt
-
-# idan Poppins font babu a kwamfutarka, sauke ta ko canza FONT_PATH
-# a cikin generators/*.py zuwa wani bold sans-serif font da kake da shi
-
 python app.py
 ```
 
-Sannan buɗe `http://localhost:5000` a browser.
+Then open `http://localhost:5000` in your browser.
 
 ## Workflow
 
-1. **Buɗewa ta farko** → za a kai ka `/partner/setup` — saka bayanan RACU International Ltd,
-   loda NCC License PDF, da hoton sa hannun CEO/MD (Ibrahim Ahmad).
-2. **Dashboard** (`/`) → za ka ga batch draft na yanzu (fanko a farko).
-3. **+ Ƙara Sabon Agent** → cika form (bayanan sirri, outlet, device, hoto, sa hannu ta pad).
-   Kowane submission yana ƙara agent guda ɗaya zuwa batch ɗin draft.
-4. Bayan agents sun kai **10 ko sama**, button ɗin **"Generate Package"** zai kunna.
-5. Danna Generate → tsarin zai ƙirƙiri Form1-Form7.pdf + Form8 (License) → ya haɗa su cikin
-   ZIP guda ɗaya → za ka iya **Download** kai tsaye daga dashboard.
-6. Bayan an generate, batch ɗin zai zama "generated" (an rufe), sabon draft batch zai fara
-   ta atomatik don sabon zagaye.
+1. **First visit** → you'll be redirected to `/partner/setup` — enter RACU
+   International Ltd's details, upload the NCC License PDF, and upload the
+   CEO/MD's signature image (Ibrahim Ahmad).
+2. **Dashboard** (`/`) → shows the current draft batch (empty at first).
+3. **Add Agent** → fill in the form (personal details, outlet, device, photo,
+   signature pad). Each submission adds one agent to the draft batch.
+4. Once the batch has **10 or more agents**, the **"Generate Package"** button
+   becomes active.
+5. Click Generate → the system builds Form1–Form7.pdf + Form8 (License) →
+   packages them into a single ZIP → **download** directly from the dashboard.
+6. After generating, the batch is marked "generated" (closed), and a new
+   draft batch starts automatically for the next round.
 
-## Matsayin Kammala Kowane Form (Fidelity Status)
+## Form Completion Status (Fidelity)
 
-| Form | Matsayi | Bayani |
+| Form | Status | Notes |
 |---|---|---|
-| Form 1 — Training Certificate | ✅ An kammala, an gwada | Yana amfani da ainihin background asset daga PDF ɗinka na asali |
-| Form 2 — Certificate of Authorisation | ✅ An kammala, an gwada | Haka nan |
-| Form 3 — Authorization for Deduction | ✅ An kammala, an gwada | Tare da signature capture daga dashboard |
-| Form 4 — ID Card | ✅ An kammala, an gwada | An gina daga sifili (design mai sauƙi) |
-| Form 5 — SIM Reg Agent Form | ⚠️ Aiki, amma layout ba pixel-perfect ba tukuna | Ana buƙatar maimaita hanyar Form1-3 (measure coordinates daga asali) domin cikakken kamanni |
-| Form 6 — Approved Request | ✅ An kammala | Table-style, an gina daga sifili |
-| Form 7 — SSP Username Creation | ✅ An kammala | Table-style, an gina daga sifili |
-| Form 8 — NCC License | ✅ An kammala | Upload-only, ba a taɓawa |
+| Form 1 — Training Certificate | Complete, tested | Uses the actual background asset from your original PDF |
+| Form 2 — Certificate of Authorisation | Complete, tested | Same approach |
+| Form 3 — Authorization for Deduction | Complete, tested | Includes signature capture from the dashboard |
+| Form 4 — ID Card | Complete, tested | Built from scratch (clean layout) |
+| Form 5 — SIM Reg Agent Form | Functional, layout not pixel-perfect yet | Needs the same measurement pass used for Forms 1-3 for an exact visual match |
+| Form 6 — Approved Request | Complete | Table-style, built from scratch |
+| Form 7 — SSP Username Creation | Complete | Table-style, built from scratch |
+| Form 8 — NCC License | Complete | Upload-only, never modified |
 
 ## Deployment Notes (Persistent Storage)
 
-Wannan app tana ajiye bayanai a **SQLite database** + **uploaded files** (photos,
-signatures) + **generated ZIPs** — duk a disk. Idan za a yi deploy, dole a tabbatar
-folder ɗin data yana kan **persistent disk/volume**, ba wani ephemeral filesystem ba
-(misali Vercel serverless BA zai yi aiki ba domin babu persistent storage).
+This app stores data in a **SQLite database** + **uploaded files** (photos,
+signatures) + **generated ZIPs** — all on disk. When deploying, make sure the
+data folder lives on **persistent disk/volume** storage, not an ephemeral
+filesystem (for example, Vercel's serverless platform will NOT work, since it
+has no persistent storage).
 
-An riga an shirya app ɗin ta yadda za ka iya saita environment variable guda ɗaya:
+The app is already set up to use a single environment variable:
 
 ```
 DATA_DIR=/path/to/persistent/folder
 ```
 
-Idan an saita wannan, database (`dashboard.db`), `uploads/`, da `outputs/` duk za su
-tafi wurin nan maimakon cikin project folder ɗin kansa. Idan ba a saita ba, za su
-zauna cikin project folder (yayi aiki don gwaji na gida, amma bazai dace da hosting
-platforms marasa persistent disk ba).
+If set, the database (`dashboard.db`), `uploads/`, and `outputs/` will all live
+there instead of inside the project folder itself. If not set, they'll stay
+inside the project folder (fine for local testing, but not suitable for
+hosting platforms without persistent disk).
 
-Ana buƙatar `SECRET_KEY` environment variable a production (Flask session security):
+A `SECRET_KEY` environment variable is also required in production (for Flask
+session security):
+
 ```
-SECRET_KEY=<wani dogon random string>
+SECRET_KEY=<a long random string>
 ```
 
-`Procfile` ya riga ya kasance don platforms irin Render (`web: gunicorn app:app`).
+A `Procfile` is included for platforms like Render (`web: gunicorn app:app`).
+`pythonanywhere_wsgi.py` and `render.yaml` are also included as ready-to-use
+deployment configs — see the comments inside each file for setup steps.
 
-## Matakai na Gaba (Recommended Next Steps)
+## Recommended Next Steps
 
-1. **Fine-tune Form 5**: yi amfani da hanyar da aka yi don Form 1-3 (pdftoppm → grid overlay →
-   auna coordinates → blank template → overlay text) domin Form 5 ta yi daidai da asali 100%.
-2. **Fine-tune ƙananan matsaloli**: akwai ƴan wurare (misali ƙaramin ghost-text a Form 2 bayan
-   "RACU INTERNATIONAL LTD") waɗanda za su iya samun ƙarin gyara ta hanyar faɗaɗa erase-boxes
-   kaɗan a cikin `assets/form2_bg.png` (za a iya sake ƙirƙira ta amfani da script a cikin
-   POC folder da aka riga aka gina).
-3. **Authentication**: idan fiye da mutum ɗaya zai yi amfani da dashboard, ƙara login/sessions.
-4. **Multi-partner support**: database schema ya riga ya tallafawa fiye da partner ɗaya —
-   ana buƙatar UI don zaɓar partner idan an ƙara fiye da ɗaya.
-5. **Deploy**: ana iya turawa zuwa kowane VPS/cloud (Render, Railway, DigitalOcean, ko dai
-   kwamfutar ofis idan koyaushe kunne take).
+1. **Fine-tune Form 5**: apply the same method used for Forms 1-3 (pdftoppm to
+   PNG, grid overlay, measure coordinates, blank the template, overlay text)
+   so Form 5 matches the original exactly.
+2. **Polish minor artifacts**: a few spots (e.g. a faint ghost of text on
+   Form 2 behind "RACU INTERNATIONAL LTD") could use slightly wider erase
+   boxes in `assets/form2_bg.png` — regenerate using the same measurement
+   script described above.
+3. **Authentication**: if more than one person will use the dashboard, add
+   login/session support.
+4. **Multi-partner support**: the database schema already supports more than
+   one partner — a partner-selector UI would be needed if more than one is added.
+5. **Deploy**: can be deployed to any VPS/cloud platform (Render, Fly.io,
+   PythonAnywhere, DigitalOcean, or even an office PC that stays on).
 
-## Fasaha da aka Yi Amfani da Ita
+## Tech Stack
 
 - Python 3, Flask, SQLite
 - ReportLab (PDF generation, vector text overlay)
 - Pillow (image processing — ID card compositing)
-- img2pdf (PNG→PDF don ID card)
-- SignaturePad.js (JS canvas signature capture a dashboard)
+- img2pdf (PNG to PDF for the ID card)
+- SignaturePad.js (JS canvas signature capture on the dashboard)

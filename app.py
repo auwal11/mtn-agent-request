@@ -71,7 +71,7 @@ def partner_setup():
             ceo_name=request.form.get("ceo_name", ""),
             ceo_signature_file=ceo_sig,
         )
-        flash("An samar da Partner cikin nasara!", "success")
+        flash("Partner profile created successfully!", "success")
         return redirect(url_for("index"))
     return render_template("partner_setup.html")
 
@@ -111,7 +111,7 @@ def add_agent():
             ncc_region=request.form.get("ncc_region", partner["region"]),
         )
         db.add_agent(batch["id"], data)
-        flash(f"An ƙara {data['first_name']} {data['surname']} cikin batch!", "success")
+        flash(f"Agent {data['first_name']} {data['surname']} added to the batch!", "success")
         if request.form.get("action") == "add_another":
             return redirect(url_for("add_agent"))
         return redirect(url_for("index"))
@@ -121,7 +121,7 @@ def add_agent():
 @app.route("/agent/<int:agent_id>/delete", methods=["POST"])
 def delete_agent(agent_id):
     db.delete_agent(agent_id)
-    flash("An cire agent daga batch.", "info")
+    flash("Agent removed from the batch.", "info")
     return redirect(url_for("index"))
 
 
@@ -132,7 +132,7 @@ def generate_batch(batch_id):
     agents = db.get_batch_agents(batch_id)
 
     if len(agents) < MIN_BATCH_SIZE:
-        flash(f"Kana buƙatar akalla {MIN_BATCH_SIZE} agents kafin Generate (yanzu: {len(agents)}).", "error")
+        flash(f"You need at least {MIN_BATCH_SIZE} agents before you can generate a batch (currently: {len(agents)}).", "error")
         return redirect(url_for("index"))
 
     date_str = datetime.now().strftime("%d/%m/%Y")
@@ -144,7 +144,7 @@ def generate_batch(batch_id):
 
     zip_path = generate_batch_package(partner, batch, agents)
     db.mark_batch_generated(batch_id, zip_path)
-    flash("An samar da cikakken package! Danna Download don samun ZIP.", "success")
+    flash("Package generated successfully! Click Download to get the ZIP.", "success")
     return redirect(url_for("index"))
 
 
@@ -152,7 +152,7 @@ def generate_batch(batch_id):
 def download_batch(batch_id):
     batch = db.get_batch(batch_id)
     if not batch or not batch["output_zip"] or not os.path.exists(batch["output_zip"]):
-        flash("Ba a samu fayil ba tukuna.", "error")
+        flash("File not found yet.", "error")
         return redirect(url_for("index"))
     return send_file(batch["output_zip"], as_attachment=True)
 

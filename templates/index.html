@@ -1,43 +1,88 @@
 {% extends "base.html" %}
+{% block title %}Dashboard — RACU Agent Onboarding{% endblock %}
+{% block pagetitle %}Dashboard{% endblock %}
+{% block pagesub %}{{ partner['name'] }} · Dealer Code {{ partner['dealer_code'] }}{% endblock %}
+{% block topbar_action %}
+  <a class="btn" href="{{ url_for('add_agent') }}">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    Add Agent
+  </a>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-  <h2>{{ partner['name'] }} <span style="font-weight:400;color:#777;font-size:14px;">({{ partner['dealer_code'] }})</span></h2>
-  <p>Batch #{{ batch['id'] }} —
-    <span class="badge draft">{{ agents|length }} / {{ min_batch_size }} agents</span>
-  </p>
+{% set remaining = min_batch_size - agents|length %}
+{% set pct = ((agents|length / min_batch_size) * 100) if agents|length < min_batch_size else 100 %}
 
-  <a class="btn" href="{{ url_for('add_agent') }}">+ Ƙara Sabon Agent</a>
-
-  {% if agents|length >= min_batch_size %}
-    <form method="post" action="{{ url_for('generate_batch', batch_id=batch['id']) }}" style="display:inline;">
-      <button class="btn" type="submit" style="margin-left:8px;">⚙️ Generate Package (ZIP)</button>
-    </form>
-  {% else %}
-    <button class="btn" disabled style="margin-left:8px;">
-      ⚙️ Generate Package (ana buƙatar ƙarin {{ min_batch_size - agents|length }})
-    </button>
-  {% endif %}
+<div class="stat-row">
+  <div class="stat">
+    <div class="label">Current Batch</div>
+    <div class="value">#{{ batch['id'] }}</div>
+    <div class="hint">Status: {{ batch['status']|capitalize }}</div>
+  </div>
+  <div class="stat">
+    <div class="label">Agents in Batch</div>
+    <div class="value accent">{{ agents|length }} <span style="font-size:15px;color:var(--muted);font-weight:600;">/ {{ min_batch_size }}</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:{{ pct }}%"></div></div>
+  </div>
+  <div class="stat">
+    <div class="label">Ready to Generate</div>
+    <div class="value" style="color: {{ 'var(--green)' if agents|length >= min_batch_size else 'var(--muted)' }}">
+      {{ "Yes" if agents|length >= min_batch_size else "Not yet" }}
+    </div>
+    <div class="hint">
+      {% if agents|length >= min_batch_size %}
+        All 7 forms + license ready to package
+      {% else %}
+        {{ remaining }} more agent(s) needed
+      {% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="label">Completed Batches</div>
+    <div class="value">{{ all_batches|selectattr('status','equalto','generated')|list|length }}</div>
+    <div class="hint">Total packages generated</div>
+  </div>
 </div>
 
 <div class="card">
-  <h3>Jerin Agents a cikin wannan Batch</h3>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2>Agents in Batch #{{ batch['id'] }}</h2>
+      <p class="desc">Every agent added here appears in Forms 1–7 once the batch is generated.</p>
+    </div>
+    {% if agents|length >= min_batch_size %}
+      <form method="post" action="{{ url_for('generate_batch', batch_id=batch['id']) }}">
+        <button class="btn" type="submit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+          Generate Package (ZIP)
+        </button>
+      </form>
+    {% else %}
+      <button class="btn" disabled>Generate Package — need {{ remaining }} more</button>
+    {% endif %}
+  </div>
+
   {% if agents|length == 0 %}
-    <p>Babu agent tukuna. Danna "Ƙara Sabon Agent" don farawa.</p>
+    <div class="empty">
+      <div class="icon">👤</div>
+      <p><strong>No agents yet.</strong><br>Add your first agent to start building this batch.</p>
+      <a class="btn" href="{{ url_for('add_agent') }}" style="margin-top:6px;">Add Agent</a>
+    </div>
   {% else %}
   <table>
-    <tr><th>#</th><th>Suna</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th></th></tr>
+    <tr><th>#</th><th>Agent</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th></th></tr>
     {% for a in agents %}
     <tr>
       <td>{{ a['sequence_no'] }}</td>
-      <td>{{ a['first_name'] }} {{ a['surname'] }}</td>
+      <td><span class="avatar">{{ a['first_name'][0] }}{{ a['surname'][0] }}</span>{{ a['first_name'] }} {{ a['surname'] }}</td>
       <td>{{ a['nin'] }}</td>
       <td>{{ a['phone_number'] }}</td>
       <td>{{ a['device_tag_id'] }}</td>
       <td>{{ a['outlet_name'] }}</td>
-      <td>
+      <td style="text-align:right;">
         <form method="post" action="{{ url_for('delete_agent', agent_id=a['id']) }}"
-              onsubmit="return confirm('Tabbatar da cirewa?');">
-          <button class="btn secondary" type="submit">Cire</button>
+              onsubmit="return confirm('Remove this agent from the batch?');">
+          <button class="btn danger sm" type="submit">Remove</button>
         </form>
       </td>
     </tr>
@@ -47,21 +92,26 @@
 </div>
 
 <div class="card">
-  <h3>Tarihin Batches</h3>
+  <h2>Batch History</h2>
+  <p class="desc">Previously generated packages remain available for download.</p>
+  {% if all_batches|length == 0 %}
+    <div class="empty"><p>No batches yet.</p></div>
+  {% else %}
   <table>
-    <tr><th>Batch #</th><th>Status</th><th>Ranar Authorized</th><th></th></tr>
+    <tr><th>Batch</th><th>Status</th><th>Date Authorized</th><th></th></tr>
     {% for b in all_batches %}
     <tr>
-      <td>{{ b['id'] }}</td>
+      <td>#{{ b['id'] }}</td>
       <td><span class="badge {{ b['status'] }}">{{ b['status'] }}</span></td>
-      <td>{{ b['date_authorized'] or '-' }}</td>
-      <td>
+      <td>{{ b['date_authorized'] or '—' }}</td>
+      <td style="text-align:right;">
         {% if b['status'] == 'generated' %}
-          <a class="btn secondary" href="{{ url_for('download_batch', batch_id=b['id']) }}">⬇ Download ZIP</a>
+          <a class="btn secondary sm" href="{{ url_for('download_batch', batch_id=b['id']) }}">Download ZIP</a>
         {% endif %}
       </td>
     </tr>
     {% endfor %}
   </table>
+  {% endif %}
 </div>
 {% endblock %}

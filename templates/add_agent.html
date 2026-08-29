@@ -1,10 +1,14 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="card">
-  <h2>Ƙara Sabon Agent</h2>
-  <form method="post" enctype="multipart/form-data" id="agentForm">
+{% block title %}Add Agent — RACU Agent Onboarding{% endblock %}
+{% block pagetitle %}Add Agent{% endblock %}
+{% block pagesub %}New agent details are added to the current draft batch{% endblock %}
 
-    <h3>Bayanan Sirri</h3>
+{% block content %}
+<form method="post" enctype="multipart/form-data" id="agentForm">
+
+  <div class="card">
+    <h2>Personal Details</h2>
+    <p class="desc">This information appears on Forms 1, 2, 3, 6 and 7.</p>
     <div class="grid2">
       <div><label>Surname</label><input name="surname" required></div>
       <div><label>First Name</label><input name="first_name" required></div>
@@ -25,12 +29,15 @@
     </div>
     <div class="grid2">
       <div><label>Email</label><input name="email" type="email"></div>
-      <div><label>KYC Username</label><input name="kyc_username"></div>
+      <div><label>KYC Username</label><input name="kyc_username" placeholder="@mtnagent.com"></div>
     </div>
+  </div>
 
-    <h3>Bayanan Outlet</h3>
+  <div class="card">
+    <h2>Outlet Details</h2>
+    <p class="desc">Location and outlet information used on Forms 2, 5, 6 and 7.</p>
     <div class="grid2">
-      <div><label>Outlet/Store Name</label><input name="outlet_name" required></div>
+      <div><label>Outlet / Store Name</label><input name="outlet_name" required></div>
       <div><label>Outlet Type</label><input name="outlet_type" value="CCR OUTLET"></div>
     </div>
     <label>Outlet Address</label>
@@ -47,27 +54,35 @@
       <div><label>Latitude</label><input name="latitude"></div>
       <div><label>Longitude</label><input name="longitude"></div>
     </div>
+  </div>
 
-    <h3>Device</h3>
+  <div class="card">
+    <h2>Device</h2>
     <div class="grid2">
       <div><label>Device Tag ID</label><input name="device_tag_id" required placeholder="MTN0299169"></div>
       <div><label>Device IMEI</label><input name="device_imei"></div>
     </div>
+  </div>
 
-    <h3>Hoto (Passport)</h3>
+  <div class="card">
+    <h2>Passport Photo</h2>
+    <p class="desc">Used on the ID Card (Form 4) and the Outlet Recruitment Form (Form 5).</p>
     <input type="file" name="photo" accept="image/*" required>
+  </div>
 
-    <h3>Sa Hannu (Signature)</h3>
-    <p style="font-size:13px;color:#666;">Rubuta sa hannu a nan da yatsa/linzami. Ana amfani da wannan a Form 3 (Authorization for Deduction) da Form 5 (Attestation).</p>
-    <canvas id="sigPad" width="500" height="150" style="border:1px solid #ccc; border-radius:6px; touch-action:none;"></canvas><br>
-    <button type="button" class="btn secondary" onclick="clearSig()">Share Sa Hannu</button>
+  <div class="card">
+    <h2>Signature</h2>
+    <p class="desc">Sign below using a mouse, finger, or stylus. Used on the Deduction Authorization (Form 3) and the Attestation (Form 5).</p>
+    <canvas id="sigPad" width="500" height="150" style="border:1px solid var(--border);border-radius:8px;width:100%;max-width:500px;touch-action:none;background:#fff;"></canvas><br>
+    <button type="button" class="btn secondary sm" style="margin-top:10px;" onclick="clearSig()">Clear Signature</button>
     <input type="hidden" name="signature_data" id="signature_data">
+  </div>
 
-    <br><br>
-    <button class="btn" type="submit" name="action" value="save">Ajiye & Koma Dashboard</button>
-    <button class="btn secondary" type="submit" name="action" value="add_another">Ajiye & Ƙara Wani</button>
-  </form>
-</div>
+  <div style="display:flex;gap:10px;">
+    <button class="btn" type="submit" name="action" value="save">Save &amp; Return to Dashboard</button>
+    <button class="btn secondary" type="submit" name="action" value="add_another">Save &amp; Add Another</button>
+  </div>
+</form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
 <script>
