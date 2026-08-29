@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Fara — Saita Bayanan Partner</h2>
+  <p>Wannan za a yi shi sau ɗaya kawai. Duk bayanan da suka canza daga batch zuwa batch (STDM, CEO/MD signature, NCC License) za a ajiye su nan.</p>
+  <form method="post" enctype="multipart/form-data">
+    <label>Sunan Partner</label>
+    <input name="name" required placeholder="RACU INTERNATIONAL LTD">
+
+    <label>Dealer Code</label>
+    <input name="dealer_code" required placeholder="PFP341071">
+
+    <div class="grid2">
+      <div><label>Region</label><input name="region" value="NORTHEAST"></div>
+      <div><label>State</label><input name="state" value="TARABA"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Default LGA</label><input name="lga" value="TAKUM"></div>
+      <div><label>NCC License No.</label><input name="ncc_license_no" placeholder="CL/S&I/0177/2024"></div>
+    </div>
+
+    <label>Adireshin Partner</label>
+    <input name="address" placeholder="Block B16 Hamdam Plaza...">
+
+    <label>Sunan STDM (na dindindin)</label>
+    <input name="stdm_name" placeholder="DAVID BUTU">
+
+    <label>Sunan CEO/MD (na dindindin)</label>
+    <input name="ceo_name" placeholder="IBRAHIM AHMAD">
+
+    <label>Sa hannun CEO/MD (hoto - PNG/JPG)</label>
+    <input type="file" name="ceo_signature_file" accept="image/*">
+
+    <label>Loda NCC License (PDF)</label>
+    <input type="file" name="ncc_license_file" accept="application/pdf" required>
+
+    <br><br>
+    <button class="btn" type="submit">Ajiye Partner</button>
+  </form>
+</div>
+{% endblock %}

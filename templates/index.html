@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>{{ partner['name'] }} <span style="font-weight:400;color:#777;font-size:14px;">({{ partner['dealer_code'] }})</span></h2>
+  <p>Batch #{{ batch['id'] }} —
+    <span class="badge draft">{{ agents|length }} / {{ min_batch_size }} agents</span>
+  </p>
+
+  <a class="btn" href="{{ url_for('add_agent') }}">+ Ƙara Sabon Agent</a>
+
+  {% if agents|length >= min_batch_size %}
+    <form method="post" action="{{ url_for('generate_batch', batch_id=batch['id']) }}" style="display:inline;">
+      <button class="btn" type="submit" style="margin-left:8px;">⚙️ Generate Package (ZIP)</button>
+    </form>
+  {% else %}
+    <button class="btn" disabled style="margin-left:8px;">
+      ⚙️ Generate Package (ana buƙatar ƙarin {{ min_batch_size - agents|length }})
+    </button>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Jerin Agents a cikin wannan Batch</h3>
+  {% if agents|length == 0 %}
+    <p>Babu agent tukuna. Danna "Ƙara Sabon Agent" don farawa.</p>
+  {% else %}
+  <table>
+    <tr><th>#</th><th>Suna</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th></th></tr>
+    {% for a in agents %}
+    <tr>
+      <td>{{ a['sequence_no'] }}</td>
+      <td>{{ a['first_name'] }} {{ a['surname'] }}</td>
+      <td>{{ a['nin'] }}</td>
+      <td>{{ a['phone_number'] }}</td>
+      <td>{{ a['device_tag_id'] }}</td>
+      <td>{{ a['outlet_name'] }}</td>
+      <td>
+        <form method="post" action="{{ url_for('delete_agent', agent_id=a['id']) }}"
+              onsubmit="return confirm('Tabbatar da cirewa?');">
+          <button class="btn secondary" type="submit">Cire</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Tarihin Batches</h3>
+  <table>
+    <tr><th>Batch #</th><th>Status</th><th>Ranar Authorized</th><th></th></tr>
+    {% for b in all_batches %}
+    <tr>
+      <td>{{ b['id'] }}</td>
+      <td><span class="badge {{ b['status'] }}">{{ b['status'] }}</span></td>
+      <td>{{ b['date_authorized'] or '-' }}</td>
+      <td>
+        {% if b['status'] == 'generated' %}
+          <a class="btn secondary" href="{{ url_for('download_batch', batch_id=b['id']) }}">⬇ Download ZIP</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
