@@ -14,9 +14,17 @@ HOW TO USE (PythonAnywhere free tier):
 5. Click the "WSGI configuration file" link on the Web tab, DELETE everything in it,
    and replace the contents with this file's contents below (adjusting the path
    and username). Save.
-6. In the "Web" tab, add an environment variable (or set it in this file, see below):
-       DATA_DIR = /home/YOURUSERNAME/mtn-agent-request/persistent_data
-       SECRET_KEY = <any long random string>
+6. Set the environment variables below (either edit them directly in this file,
+   or add them under the Web tab's "Environment variables" section):
+       DATA_DIR         = /home/YOURUSERNAME/mtn-agent-request/persistent_data
+       SECRET_KEY       = <any long random string>
+       ROOT_NAME        = Auwal                 (shown as the Root/CEO account name)
+       ROOT_PASSWORD    = AuwalControl           (change this to something only you know)
+       GMAIL_ADDRESS    = youraddress@gmail.com  (used by Receiver Admin's "Send to Gmail")
+       GMAIL_APP_PASSWORD = <16-character Gmail App Password, NOT your normal Gmail password>
+   Note: ADMIN_PASSWORD / RECEIVER_PASSWORD are no longer used — the Root/CEO account
+   (above) creates and manages all Admin and Receiver Admin accounts from inside the app,
+   under Command Center -> Create Admin/Receiver.
 7. Click the green "Reload" button on the Web tab. Your app will be live at
    https://YOURUSERNAME.pythonanywhere.com
 """
@@ -34,6 +42,10 @@ if project_home not in sys.path:
 # this just keeps data organized in its own folder)
 os.environ.setdefault('DATA_DIR', os.path.join(project_home, 'persistent_data'))
 os.environ.setdefault('SECRET_KEY', 'change-this-to-a-long-random-string')
+os.environ.setdefault('ROOT_NAME', 'Auwal')
+os.environ.setdefault('ROOT_PASSWORD', 'AuwalControl')
+os.environ.setdefault('GMAIL_ADDRESS', '')
+os.environ.setdefault('GMAIL_APP_PASSWORD', '')
 
 os.makedirs(os.environ['DATA_DIR'], exist_ok=True)
 os.makedirs(os.path.join(os.environ['DATA_DIR'], 'uploads', 'photos'), exist_ok=True)

@@ -1,0 +1,22 @@
+{% extends "public_base.html" %}
+{% block title %}Status na Submission{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Status na Submission ɗinka</h1>
+  <p class="desc">Waɗannan su ne agent ɗin da ka tura daga wannan na'ura/browser.</p>
+  {% if my_agents %}
+    {% for a in my_agents %}
+    <div class="agent-row">
+      <div>
+        <div class="nm">{{ a['first_name'] }} {{ a['surname'] }}</div>
+        <div class="sub">{{ a['submitted_partner_name'] }} · {{ a['outlet_name'] }}</div>
+      </div>
+      <span class="badge {{ a['status'] }}">{{ a['status']|replace('_',' ') }}</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="desc">Ba ka riga ka tura wani agent ba tukuna.</p>
+  {% endif %}
+  <a class="btn" href="{{ url_for('home') }}">+ Add Another Agent</a>
+</div>
+{% endblock %}

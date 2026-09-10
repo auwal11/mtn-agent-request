@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Receiver Dashboard — {{ company_name }}{% endblock %}
+{% block pagetitle %}Receiver Dashboard{% endblock %}
+{% block pagesub %}{{ partner['name'] if partner else '' }} · Incoming submissions & completed batches{% endblock %}
+{% block topbar_action %}
+  <a class="btn" href="{{ url_for('receiver_add_agent') }}">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    Add Agent
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-card">
+  <h2>👋 Welcome back, {{ current_user_name }}</h2>
+  <p>Your incoming workspace is ready. Review received batches, manage agent information, and send completed submissions.</p>
+  <div class="welcome-mini">
+    <div class="pill"><div class="n">{{ incoming_batches|length }}</div><div class="l">New Batches</div></div>
+    <div class="pill"><div class="n">{{ agents|length if agents else 0 }}</div><div class="l">Draft Agents</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Batches Received from Admin</h2>
+  <p class="desc">Each batch here has 8 PDFs ready (not zipped). Send them straight to Gmail.</p>
+  {% if incoming_batches|length == 0 %}
+    <div class="empty"><div class="icon">📭</div><p>No batches submitted by Admin yet.</p></div>
+  {% else %}
+    {% for b in incoming_batches %}
+    <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
+        <div>
+          <strong>Batch #{{ b['id'] }}</strong> · Authorized {{ b['date_authorized'] or '—' }}
+          {% if b['emailed_at'] %}<div class="hint" style="color:var(--green);">✓ Emailed to {{ b['emailed_to'] }}</div>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('receiver_send_email', batch_id=b['id']) }}" style="display:flex;gap:8px;">
+          <input type="email" name="to_email" placeholder="recipient@gmail.com" required style="min-width:220px;">
+          <button class="btn sm" type="submit">Send to Gmail</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Current Draft Batch {% if batch %}#{{ batch['id'] }}{% endif %}</h2>
+  <p class="desc">Agents you or the public/Admin have added, not yet submitted to receiver.</p>
+  {% if not agents %}
+    <div class="empty"><p>No agents in the draft batch yet.</p></div>
+  {% else %}
+  <table>
+    <tr><th>#</th><th>Agent</th><th>Phone</th><th>Outlet</th><th>Status</th><th></th></tr>
+    {% for a in agents %}
+    <tr>
+      <td>{{ a['sequence_no'] }}</td>
+      <td><span class="avatar">{{ a['first_name'][0] }}{{ a['surname'][0] }}</span>{{ a['first_name'] }} {{ a['surname'] }}</td>
+      <td>{{ a['phone_number'] }}</td>
+      <td>{{ a['outlet_name'] }}</td>
+      <td><span class="badge {{ a['status'] }}">{{ a['status']|replace('_',' ') }}</span></td>
+      <td style="text-align:right;white-space:nowrap;">
+        <a class="btn secondary sm" href="{{ url_for('receiver_agent_detail', agent_id=a['id']) }}">View</a>
+        <form method="post" action="{{ url_for('receiver_delete_agent', agent_id=a['id']) }}" style="display:inline;"
+              onsubmit="return confirm('Remove this agent?');">
+          <button class="btn danger sm" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,42 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Partner Settings — RACU Agent Onboarding{% endblock %}
+{% block title %}Partner Settings — {{ company_name }}{% endblock %}
 {% block pagetitle %}Partner Settings{% endblock %}
 {% block pagesub %}One-time setup — details that stay the same across every batch{% endblock %}
 
 {% block content %}
 <div class="card">
   <h2>Partner Profile</h2>
-  <p class="desc">This is done once. Values that don't change from batch to batch (STDM name, CEO/MD signature, NCC License) are stored here.</p>
+  <p class="desc">This is done once. Values that don't change from batch to batch (STDM name, CEO/MD signature, NCC License) are stored here. You can come back and update the license anytime.</p>
   <form method="post" enctype="multipart/form-data">
     <label>Partner Name</label>
-    <input name="name" required placeholder="RACU INTERNATIONAL LTD">
+    <input name="name" required placeholder="RACU INTERNATIONAL LTD" value="{{ partner['name'] if partner else '' }}">
 
     <label>Dealer Code</label>
-    <input name="dealer_code" required placeholder="PFP341071">
+    <input name="dealer_code" required placeholder="PFP341071" value="{{ partner['dealer_code'] if partner else '' }}">
 
     <div class="grid2">
-      <div><label>Region</label><input name="region" value="NORTHEAST"></div>
-      <div><label>State</label><input name="state" value="TARABA"></div>
+      <div><label>Region</label><input name="region" value="{{ partner['region'] if partner else 'NORTHEAST' }}"></div>
+      <div><label>State</label><input name="state" value="{{ partner['state'] if partner else 'TARABA' }}"></div>
     </div>
     <div class="grid2">
-      <div><label>Default LGA</label><input name="lga" value="TAKUM"></div>
-      <div><label>NCC License No.</label><input name="ncc_license_no" placeholder="CL/S&I/0177/2024"></div>
+      <div><label>Default LGA</label><input name="lga" value="{{ partner['lga'] if partner else 'TAKUM' }}"></div>
+      <div><label>NCC License No.</label><input name="ncc_license_no" placeholder="CL/S&I/0177/2024" value="{{ partner['ncc_license_no'] if partner else '' }}"></div>
     </div>
 
     <label>Partner Address</label>
-    <input name="address" placeholder="Block B16 Hamdam Plaza...">
+    <input name="address" placeholder="Block B16 Hamdam Plaza..." value="{{ partner['address'] if partner else '' }}">
 
     <label>STDM Name (fixed on every certificate)</label>
-    <input name="stdm_name" placeholder="DAVID BUTU">
+    <input name="stdm_name" placeholder="DAVID BUTU" value="{{ partner['stdm_name'] if partner else '' }}">
 
-    <label>CEO/MD Name (fixed on every recruitment form)</label>
-    <input name="ceo_name" placeholder="IBRAHIM AHMAD">
+    <label>CEO/MD Name (used only for the signature block; not printed as text on Form 5)</label>
+    <input name="ceo_name" placeholder="IBRAHIM AHMAD" value="{{ partner['ceo_name'] if partner else '' }}">
 
-    <label>CEO/MD Signature (image — PNG/JPG)</label>
+    <label>CEO/MD Signature (image — PNG/JPG){% if partner and partner['ceo_signature_file'] %} — already uploaded, choose a file only to replace{% endif %}</label>
     <input type="file" name="ceo_signature_file" accept="image/*">
 
-    <label>NCC License (PDF)</label>
-    <input type="file" name="ncc_license_file" accept="application/pdf" required>
+    <label>NCC License (PDF){% if partner and partner['ncc_license_file'] %} — already uploaded, choose a file only to replace{% endif %}</label>
+    <input type="file" name="ncc_license_file" accept="application/pdf" {{ 'required' if not (partner and partner['ncc_license_file']) }}>
     <p class="field-hint">Attached unchanged as Form 8 in every generated package.</p>
 
     <br>

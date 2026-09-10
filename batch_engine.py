@@ -60,7 +60,7 @@ def generate_batch_package(partner_row, batch_row, agent_rows):
     generate_form2_multi(
         os.path.join(batch_dir, "Form2_Certificate_of_Authorisation.pdf"),
         f2_agents, partner_name=partner_row['name'], region=partner_row['region'],
-        day=day, month=month, year=year,
+        day=day, month=month, year=year, stdm_name=partner_row['stdm_name'] or '',
     )
 
     # --- Form 3: Authorization for Deduction ---
@@ -77,7 +77,7 @@ def generate_batch_package(partner_row, batch_row, agent_rows):
 
     # --- Form 5: SIM Registration Agent & Outlet Recruitment Form ---
     f5_agents = [dict(full_name=x['full_name'], phone_number=x['row']['phone_number'],
-                       kyc_username=x['row']['kyc_username'], qualification=x['row']['qualification'],
+                       email=x['row']['email'], qualification=x['row']['qualification'],
                        outlet_address=x['row']['outlet_address'], outlet_type=x['row']['outlet_type'],
                        cluster=x['row']['cluster'], lga=x['row']['lga'], territory=x['row']['territory'],
                        device_id=x['row']['device_tag_id'], device_imei=x['row']['device_imei'],

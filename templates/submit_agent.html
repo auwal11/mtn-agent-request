@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add Agent — MTN Agent Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161A; --panel:#FFFFFF; --page:#F3F4F6; --border:#E6E7EB; --muted:#6B7280;
+    --yellow:#FFCC00; --yellow-deep:#E6B800; --radius:12px;
+    --font-display:'Poppins',sans-serif; --font-body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--font-body);background:var(--page);color:var(--ink);font-size:14.5px;}
+  .topbar{background:#20242B;color:#fff;padding:18px 24px;}
+  .topbar .inner{max-width:760px;margin:0 auto;}
+  .topbar h1{font-family:var(--font-display);font-size:18px;margin:0;font-weight:800;}
+  .topbar p{margin:4px 0 0;color:#C7CAD1;font-size:12.5px;}
+  .content{max-width:760px;margin:0 auto;padding:24px 16px 60px;}
+  .flash{padding:12px 16px;border-radius:9px;margin-bottom:16px;font-size:13.5px;background:#EAF1FE;color:#2F6FED;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+  .card h2{font-family:var(--font-display);font-size:15px;margin:0 0 4px;font-weight:700;}
+  .card .desc{color:var(--muted);font-size:12.5px;margin:0 0 14px;}
+  form label{display:block;font-size:12.5px;font-weight:600;margin:14px 0 5px;color:#3A3D44;}
+  form label:first-child{margin-top:0;}
+  input,select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);
+    box-sizing:border-box;font-size:13.5px;font-family:var(--font-body);background:#fff;color:var(--ink);}
+  input:focus,select:focus{outline:2px solid var(--yellow);outline-offset:0;border-color:var(--yellow-deep);}
+  .grid2{display:flex;gap:0 16px;}
+  .grid2 > div{flex:1 1 0;min-width:0;}
+  .btn{display:inline-flex;align-items:center;gap:7px;background:var(--yellow);color:#1a1a1a;
+    padding:11px 18px;border-radius:9px;text-decoration:none;border:none;font-weight:700;
+    cursor:pointer;font-size:13.5px;font-family:var(--font-body);}
+  .btn.secondary{background:#fff;border:1px solid var(--border);color:var(--ink);}
+  @media(max-width:600px){.grid2{flex-direction:column;}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="inner">
+    <h1>Agent Registration</h1>
+    <p>{{ partner_name }} · Cika bayanan agent don MTN SIM Registration onboarding</p>
+  </div>
+</div>
+<div class="content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="post" enctype="multipart/form-data" id="agentForm">
+    <div class="card">
+      <h2>Personal Details</h2>
+      <div class="grid2">
+        <div><label>Surname</label><input name="surname" required></div>
+        <div><label>First Name</label><input name="first_name" required></div>
+      </div>
+      <div class="grid2">
+        <div><label>Other Name</label><input name="other_name"></div>
+        <div><label>Gender</label><select name="gender"><option>MALE</option><option>FEMALE</option></select></div>
+      </div>
+      <div class="grid2">
+        <div><label>NIN</label><input name="nin" required maxlength="11"></div>
+        <div><label>Qualification</label><input name="qualification" value="SSCE"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Phone Number</label><input name="phone_number" required></div>
+        <div><label>MoMo Number</label><input name="momo_number"></div>
+      </div>
+      <div><label>Email</label><input name="email" type="email"></div>
+    </div>
+
+    <div class="card">
+      <h2>Outlet Details</h2>
+      <div class="grid2">
+        <div><label>Outlet / Store Name</label><input name="outlet_name" required></div>
+        <div><label>Outlet Type</label><input name="outlet_type" value="CCR OUTLET"></div>
+      </div>
+      <label>Outlet Address</label>
+      <input name="outlet_address" required>
+      <div class="grid2">
+        <div><label>LGA</label><input name="lga" value="{{ partner['lga'] }}"></div>
+        <div><label>Territory</label><input name="territory"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Cluster</label><input name="cluster"></div>
+        <div><label>State</label><input name="state" value="{{ partner['state'] }}"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Device</h2>
+      <div class="grid2">
+        <div><label>Device Tag ID</label><input name="device_tag_id" required placeholder="MTN0299169"></div>
+        <div><label>Device IMEI</label><input name="device_imei"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Passport Photo</h2>
+      <input type="file" name="photo" accept="image/*" required>
+    </div>
+
+    <div class="card">
+      <h2>Signature</h2>
+      <p class="desc">Sign below using a mouse, finger, or stylus.</p>
+      <canvas id="sigPad" width="500" height="150" style="border:1px solid var(--border);border-radius:8px;width:100%;max-width:500px;touch-action:none;background:#fff;"></canvas><br>
+      <button type="button" class="btn secondary" style="margin-top:10px;" onclick="clearSig()">Clear Signature</button>
+      <input type="hidden" name="signature_data" id="signature_data">
+    </div>
+
+    <button class="btn" type="submit">Submit Agent</button>
+  </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<script>
+  const canvas = document.getElementById('sigPad');
+  const signaturePad = new SignaturePad(canvas, {backgroundColor: 'rgb(255,255,255)'});
+  function clearSig() { signaturePad.clear(); }
+  document.getElementById('agentForm').addEventListener('submit', function(e) {
+    if (!signaturePad.isEmpty()) {
+      document.getElementById('signature_data').value = signaturePad.toDataURL('image/png');
+    }
+  });
+</script>
+</body>
+</html>

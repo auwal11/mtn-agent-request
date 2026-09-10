@@ -23,7 +23,7 @@ def _ensure_font():
 def xy(x_px, y_px_top):
     return x_px*PX, PAGE_H-(y_px_top*PX)
 
-def generate_form2_multi(output_path, agents, partner_name, region, day, month, year):
+def generate_form2_multi(output_path, agents, partner_name, region, day, month, year, stdm_name=""):
     """agents: list of dicts with keys full_name, location, kit_no"""
     _ensure_font()
     c = canvas.Canvas(output_path, pagesize=(PAGE_W, PAGE_H))
@@ -45,5 +45,8 @@ def generate_form2_multi(output_path, agents, partner_name, region, day, month, 
         x,y = xy(275,1345); c.drawString(x,y,region)
         c.setFont('Poppins-Bold', 11)
         x,y = xy(635,1345); c.drawString(x,y,partner_name)
+        if stdm_name:
+            c.setFont('Poppins-Bold', 17)
+            x,y = xy(1430,1345); c.drawCentredString(x,y,stdm_name)
         c.showPage()
     c.save()

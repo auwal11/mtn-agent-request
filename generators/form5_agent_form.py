@@ -33,7 +33,7 @@ def generate_form5_multi(output_path, agents, partner_name, dealer_code, region,
         details = [
             ["FULL NAME (as on NIN)", a['full_name']],
             ["PHONE NUMBER", a['phone_number']],
-            ["KYC USERNAME", a.get('kyc_username','')],
+            ["EMAIL ADDRESS", a.get('email','')],
             ["EDUCATIONAL QUALIFICATION", a.get('qualification','SSCE')],
             ["OUTLET ADDRESS", a['outlet_address']],
             ["OUTLET TYPE", a.get('outlet_type','CCR OUTLET')],
@@ -100,7 +100,6 @@ def generate_form5_multi(output_path, agents, partner_name, dealer_code, region,
         elements.append(Paragraph(f"Dated this {date_str}", body))
         if ceo_signature_path and os.path.exists(ceo_signature_path):
             elements.append(RLImage(ceo_signature_path, width=90, height=40))
-        elements.append(Paragraph(f"CEO/MD Full Name: {ceo_name}", body))
 
         elements.append(Spacer(1, 30))
 

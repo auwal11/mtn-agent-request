@@ -1,0 +1,31 @@
+{% extends "public_base.html" %}
+{% block title %}Submit Agent — MTN Agent Onboarding{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Agent Registration</h1>
+  <p class="desc">Rubuta sunan kamfanin ku (Partner/Company Name) don fara ƙara agent na SIM registration.</p>
+  <form method="post" action="{{ url_for('submit_start') }}">
+    <label>Partner / Company Name</label>
+    <input type="text" name="partner_name" placeholder="e.g. Muktar Communication" required>
+    <button class="btn" type="submit">Continue → Add Agent</button>
+  </form>
+</div>
+
+{% if my_agents %}
+<div class="card" style="margin-top:16px;">
+  <h1 style="font-size:16px;">Bayanan da ka riga ka tura</h1>
+  <p class="desc">Status na agent ɗin da ka submit daga wannan na'ura.</p>
+  {% for a in my_agents %}
+  <div class="agent-row">
+    <div>
+      <div class="nm">{{ a['first_name'] }} {{ a['surname'] }}</div>
+      <div class="sub">{{ a['submitted_partner_name'] }}</div>
+    </div>
+    <span class="badge {{ a['status'] }}">{{ a['status']|replace('_',' ') }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="footer-link">Staff? <a href="{{ url_for('login') }}">Login here</a></div>
+{% endblock %}

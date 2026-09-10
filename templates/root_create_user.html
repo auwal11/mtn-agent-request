@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Create Admin/Receiver{% endblock %}
+{% block pagetitle %}Create Admin / Receiver Admin{% endblock %}
+{% block pagesub %}Generate a new account and its credentials{% endblock %}
+
+{% block content %}
+<form method="post">
+  <div class="card">
+    <h2>Account Details</h2>
+    <div class="grid2">
+      <div><label>Full Name</label><input name="name" required placeholder="e.g. John Bala"></div>
+      <div><label>Role</label>
+        <select name="role">
+          <option value="admin">Admin</option>
+          <option value="receiver_admin">Receiver Admin</option>
+        </select>
+      </div>
+    </div>
+    <label>Password (leave blank to auto-generate)</label>
+    <input name="password" placeholder="Auto-generated if left blank">
+  </div>
+
+  <div class="card">
+    <h2>Company / Partner</h2>
+    <p class="desc">Attach this account to an existing company, or create a new one.</p>
+    <label>Existing Company</label>
+    <select name="company_id">
+      <option value="">— None, create new below —</option>
+      {% for c in companies %}
+      <option value="{{ c['id'] }}">{{ c['name'] }}</option>
+      {% endfor %}
+    </select>
+    <label>Or New Company Name</label>
+    <input name="new_company_name" placeholder="e.g. Bose Multi-business Ventures">
+  </div>
+
+  <button class="btn" type="submit">Create Account</button>
+</form>
+{% endblock %}

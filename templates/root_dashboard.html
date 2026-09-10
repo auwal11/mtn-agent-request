@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Command Center — Root{% endblock %}
+{% block pagetitle %}Command Center{% endblock %}
+{% block pagesub %}Full system control · Companies, Admins & Receivers{% endblock %}
+{% block topbar_action %}
+  <a class="btn" href="{{ url_for('root_create_user') }}">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    Create Admin/Receiver
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-card">
+  <h2>✨ Good day, {{ current_user_name }} 👋</h2>
+  <p>Welcome to your command center. Everything across your workspaces is under control.</p>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><div class="label">Companies</div><div class="value">{{ counts.companies }}</div></div>
+  <div class="stat"><div class="label">Admins</div><div class="value">{{ counts.admins }}</div></div>
+  <div class="stat"><div class="label">Receiver Admins</div><div class="value">{{ counts.receivers }}</div></div>
+  <div class="stat"><div class="label">Total Agents</div><div class="value accent">{{ counts.agents }}</div></div>
+  <div class="stat"><div class="label">Active Sessions</div><div class="value">{{ counts.active_sessions }}</div></div>
+  <div class="stat"><div class="label">Pending Reviews</div><div class="value">{{ counts.pending }}</div></div>
+</div>
+
+<div class="card">
+  <h2>Administrators</h2>
+  {% if admins|length == 0 %}
+    <div class="empty"><p>No admin accounts yet.</p></div>
+  {% else %}
+  <table>
+    <tr><th>Name</th><th>Company</th><th>Status</th><th></th></tr>
+    {% for u in admins %}
+    <tr>
+      <td><span class="avatar">{{ u['name'][0]|upper }}</span>{{ u['name'] }}</td>
+      <td>{{ u['company_name'] or '—' }}</td>
+      <td><span class="badge {{ u['status'] }}">{{ u['status'] }}</span></td>
+      <td style="text-align:right;white-space:nowrap;">
+        {% for s,label in [('enabled','Enable'),('disabled','Disable'),('revoked','Revoke'),('enabled','Reactivate')] %}
+        <form method="post" action="{{ url_for('root_set_user_status', user_id=u['id']) }}" style="display:inline;">
+          <input type="hidden" name="status" value="{{ s }}">
+          <button class="btn secondary sm" type="submit">{{ label }}</button>
+        </form>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Receiver Admins</h2>
+  {% if receivers|length == 0 %}
+    <div class="empty"><p>No receiver accounts yet.</p></div>
+  {% else %}
+  <table>
+    <tr><th>Name</th><th>Company</th><th>Status</th><th></th></tr>
+    {% for u in receivers %}
+    <tr>
+      <td><span class="avatar">{{ u['name'][0]|upper }}</span>{{ u['name'] }}</td>
+      <td>{{ u['company_name'] or '—' }}</td>
+      <td><span class="badge {{ u['status'] }}">{{ u['status'] }}</span></td>
+      <td style="text-align:right;white-space:nowrap;">
+        {% for s,label in [('enabled','Enable'),('disabled','Disable'),('revoked','Revoke'),('enabled','Reactivate')] %}
+        <form method="post" action="{{ url_for('root_set_user_status', user_id=u['id']) }}" style="display:inline;">
+          <input type="hidden" name="status" value="{{ s }}">
+          <button class="btn secondary sm" type="submit">{{ label }}</button>
+        </form>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Companies / Partners</h2>
+  {% if companies|length == 0 %}
+    <div class="empty"><p>No companies yet — created automatically when you set up an Admin.</p></div>
+  {% else %}
+  <table>
+    <tr><th>ID</th><th>Name</th><th>Dealer Code</th></tr>
+    {% for c in companies %}
+    <tr><td>{{ c['id'] }}</td><td>{{ c['name'] }}</td><td>{{ c['dealer_code'] or '—' }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Recent System Activity</h2>
+  {% if activity|length == 0 %}
+    <div class="empty"><p>No activity logged yet.</p></div>
+  {% else %}
+  {% for e in activity %}
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <strong>{{ e['actor_name'] }}</strong> ({{ e['actor_role'] }}) — {{ e['action'] }}
+      <div style="color:var(--muted);font-size:11.5px;">{{ e['created_at'] }}</div>
+    </div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

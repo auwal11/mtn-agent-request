@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — RACU Agent Onboarding{% endblock %}
+{% block title %}Dashboard — {{ company_name }}{% endblock %}
 {% block pagetitle %}Dashboard{% endblock %}
 {% block pagesub %}{{ partner['name'] }} · Dealer Code {{ partner['dealer_code'] }}{% endblock %}
 {% block topbar_action %}
@@ -12,6 +12,15 @@
 {% block content %}
 {% set remaining = min_batch_size - agents|length %}
 {% set pct = ((agents|length / min_batch_size) * 100) if agents|length < min_batch_size else 100 %}
+
+<div class="welcome-card">
+  <h2>✨ Welcome back, {{ current_user_name }}</h2>
+  <p>Your workspace is ready. Here's what needs your attention.</p>
+  <div class="welcome-mini">
+    <div class="pill"><div class="n">{{ agents|length }}</div><div class="l">Agents</div></div>
+    <div class="pill"><div class="n">{{ agents|selectattr('status','equalto','submitted')|list|length }}</div><div class="l">Pending</div></div>
+  </div>
+</div>
 
 <div class="stat-row">
   <div class="stat">
@@ -39,8 +48,8 @@
   </div>
   <div class="stat">
     <div class="label">Completed Batches</div>
-    <div class="value">{{ all_batches|selectattr('status','equalto','generated')|list|length }}</div>
-    <div class="hint">Total packages generated</div>
+    <div class="value">{{ all_batches|selectattr('status','equalto','sent_to_receiver')|list|length }}</div>
+    <div class="hint">Total packages submitted to receiver</div>
   </div>
 </div>
 
@@ -51,14 +60,15 @@
       <p class="desc">Every agent added here appears in Forms 1–7 once the batch is generated.</p>
     </div>
     {% if agents|length >= min_batch_size %}
-      <form method="post" action="{{ url_for('generate_batch', batch_id=batch['id']) }}">
+      <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
+            onsubmit="return confirm('Tura wannan batch din zuwa Receiver Dashboard?');">
         <button class="btn" type="submit">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
-          Generate Package (ZIP)
+          Submit to Receiver
         </button>
       </form>
     {% else %}
-      <button class="btn" disabled>Generate Package — need {{ remaining }} more</button>
+      <button class="btn" disabled>Submit to Receiver — need {{ remaining }} more</button>
     {% endif %}
   </div>
 
@@ -70,7 +80,7 @@
     </div>
   {% else %}
   <table>
-    <tr><th>#</th><th>Agent</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th></th></tr>
+    <tr><th>#</th><th>Agent</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th>Status</th><th>Source</th><th></th></tr>
     {% for a in agents %}
     <tr>
       <td>{{ a['sequence_no'] }}</td>
@@ -79,8 +89,11 @@
       <td>{{ a['phone_number'] }}</td>
       <td>{{ a['device_tag_id'] }}</td>
       <td>{{ a['outlet_name'] }}</td>
-      <td style="text-align:right;">
-        <form method="post" action="{{ url_for('delete_agent', agent_id=a['id']) }}"
+      <td><span class="badge {{ a['status'] }}">{{ a['status']|replace('_',' ') }}</span></td>
+      <td>{{ a['submitted_partner_name'] or a['added_by'] }}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <a class="btn secondary sm" href="{{ url_for('agent_detail', agent_id=a['id']) }}">View</a>
+        <form method="post" action="{{ url_for('delete_agent', agent_id=a['id']) }}" style="display:inline;"
               onsubmit="return confirm('Remove this agent from the batch?');">
           <button class="btn danger sm" type="submit">Remove</button>
         </form>
@@ -102,11 +115,11 @@
     {% for b in all_batches %}
     <tr>
       <td>#{{ b['id'] }}</td>
-      <td><span class="badge {{ b['status'] }}">{{ b['status'] }}</span></td>
+      <td><span class="badge {{ 'generated' if b['status']=='sent_to_receiver' else b['status'] }}">{{ b['status']|replace('_',' ') }}</span></td>
       <td>{{ b['date_authorized'] or '—' }}</td>
       <td style="text-align:right;">
-        {% if b['status'] == 'generated' %}
-          <a class="btn secondary sm" href="{{ url_for('download_batch', batch_id=b['id']) }}">Download ZIP</a>
+        {% if b['status'] == 'sent_to_receiver' %}
+          <a class="btn secondary sm" href="{{ url_for('download_batch', batch_id=b['id']) }}">Download ZIP (archive)</a>
         {% endif %}
       </td>
     </tr>

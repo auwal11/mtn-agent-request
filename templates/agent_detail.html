@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Agent Detail — {{ agent['first_name'] }} {{ agent['surname'] }}{% endblock %}
+{% block pagetitle %}{{ agent['first_name'] }} {{ agent['surname'] }}{% endblock %}
+{% block pagesub %}Batch #{{ agent['batch_id'] }} · <span class="badge {{ agent['status'] }}">{{ agent['status']|replace('_',' ') }}</span> · Added by {{ agent['submitted_partner_name'] or agent['added_by'] }}{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  <div class="card">
+    <h2>Personal Details</h2>
+    <div class="grid2">
+      <div><label>Surname</label><input name="surname" value="{{ agent['surname'] }}" required></div>
+      <div><label>First Name</label><input name="first_name" value="{{ agent['first_name'] }}" required></div>
+    </div>
+    <div class="grid2">
+      <div><label>Other Name</label><input name="other_name" value="{{ agent['other_name'] or '' }}"></div>
+      <div><label>Gender</label>
+        <select name="gender">
+          <option value="MALE" {{ 'selected' if agent['gender']=='MALE' }}>MALE</option>
+          <option value="FEMALE" {{ 'selected' if agent['gender']=='FEMALE' }}>FEMALE</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div><label>NIN</label><input name="nin" value="{{ agent['nin'] }}" required maxlength="11"></div>
+      <div><label>Qualification</label><input name="qualification" value="{{ agent['qualification'] }}"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Phone Number</label><input name="phone_number" value="{{ agent['phone_number'] }}" required></div>
+      <div><label>MoMo Number</label><input name="momo_number" value="{{ agent['momo_number'] or '' }}"></div>
+    </div>
+    <div><label>Email</label><input name="email" type="email" value="{{ agent['email'] or '' }}"></div>
+  </div>
+
+  <div class="card">
+    <h2>Outlet Details</h2>
+    <div class="grid2">
+      <div><label>Outlet / Store Name</label><input name="outlet_name" value="{{ agent['outlet_name'] or '' }}" required></div>
+      <div><label>Outlet Type</label><input name="outlet_type" value="{{ agent['outlet_type'] }}"></div>
+    </div>
+    <label>Outlet Address</label>
+    <input name="outlet_address" value="{{ agent['outlet_address'] or '' }}" required>
+    <div class="grid2">
+      <div><label>LGA</label><input name="lga" value="{{ agent['lga'] or '' }}"></div>
+      <div><label>Territory</label><input name="territory" value="{{ agent['territory'] or '' }}"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Cluster</label><input name="cluster" value="{{ agent['cluster'] or '' }}"></div>
+      <div><label>State</label><input name="state" value="{{ agent['state'] or '' }}"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Latitude</label><input name="latitude" value="{{ agent['latitude'] or '' }}"></div>
+      <div><label>Longitude</label><input name="longitude" value="{{ agent['longitude'] or '' }}"></div>
+    </div>
+    <label>NCC Region</label>
+    <input name="ncc_region" value="{{ agent['ncc_region'] or '' }}">
+  </div>
+
+  <div class="card">
+    <h2>Device</h2>
+    <div class="grid2">
+      <div><label>Device Tag ID</label><input name="device_tag_id" value="{{ agent['device_tag_id'] }}" required></div>
+      <div><label>Device IMEI</label><input name="device_imei" value="{{ agent['device_imei'] or '' }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Photo &amp; Signature</h2>
+    <div class="grid2">
+      <div>
+        <p class="desc">Current Photo</p>
+        {% if agent['photo_path'] %}<img src="/uploads-preview/{{ agent['photo_path']|basename }}" style="max-width:140px;border-radius:8px;border:1px solid var(--border);" onerror="this.style.display='none'">{% endif %}
+        <label>Replace Photo</label>
+        <input type="file" name="photo" accept="image/*">
+      </div>
+      <div>
+        <p class="desc">Current Signature</p>
+        {% if agent['signature_path'] %}<img src="/uploads-preview/{{ agent['signature_path']|basename }}" style="max-width:200px;border:1px solid var(--border);border-radius:8px;background:#fff;" onerror="this.style.display='none'">{% endif %}
+        <label>Redraw Signature (optional)</label>
+        <canvas id="sigPad" width="400" height="120" style="border:1px solid var(--border);border-radius:8px;width:100%;max-width:400px;touch-action:none;background:#fff;"></canvas><br>
+        <button type="button" class="btn secondary sm" style="margin-top:8px;" onclick="clearSig()">Clear</button>
+        <input type="hidden" name="signature_data" id="signature_data">
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;">
+    <button class="btn" type="submit">Save Changes</button>
+    <a class="btn secondary" href="{{ url_for(back_endpoint) }}">← Back to Dashboard</a>
+  </div>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<script>
+  const canvas = document.getElementById('sigPad');
+  const signaturePad = new SignaturePad(canvas, {backgroundColor: 'rgb(255,255,255)'});
+  function clearSig() { signaturePad.clear(); }
+  document.querySelector('form').addEventListener('submit', function(e) {
+    if (!signaturePad.isEmpty()) {
+      document.getElementById('signature_data').value = signaturePad.toDataURL('image/png');
+    }
+  });
+</script>
+{% endblock %}

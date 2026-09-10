@@ -1,0 +1,14 @@
+{% extends "public_base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Welcome back</h1>
+  <p class="desc">Enter your password. Secure access to your workspace.</p>
+  <form method="post">
+    <label>Password</label>
+    <input type="password" name="password" placeholder="••••••••••••" autofocus required>
+    <button class="btn" type="submit">Continue</button>
+  </form>
+</div>
+<div class="footer-link"><a href="{{ url_for('home') }}">← Back to agent submission</a></div>
+{% endblock %}
