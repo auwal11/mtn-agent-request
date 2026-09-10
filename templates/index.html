@@ -103,7 +103,6 @@
   </table>
   {% endif %}
 </div>
-
 <div class="card">
   <h2>Batch History</h2>
   <p class="desc">Completed batches — submitted straight to the Receiver Dashboard.</p>
@@ -111,7 +110,7 @@
     <div class="empty"><p>No batches yet.</p></div>
   {% else %}
   <table>
-    <tr><th>Batch</th><th>Status</th><th>Date Authorized</th></tr>
+    <tr><th>Batch</th><th>Status</th><th>Date Authorized</th><th></th></tr>
     {% for b in all_batches %}
     <tr>
       <td>#{{ b['id'] }}</td>
@@ -123,6 +122,15 @@
         {% endif %}
       </td>
       <td>{{ b['date_authorized'] or '—' }}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <a class="btn secondary sm" href="{{ url_for('batch_detail', batch_id=b['id']) }}">View</a>
+        {% if b['status'] == 'generated' %}
+          <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=b['id']) }}" style="display:inline;"
+                onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
+            <button class="btn sm" type="submit">Submit to Receiver</button>
+          </form>
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </table>
