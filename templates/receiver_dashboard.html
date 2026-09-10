@@ -21,7 +21,7 @@
 
 <div class="card">
   <h2>Batches Received from Admin</h2>
-  <p class="desc">Each batch here has 8 PDFs ready (not zipped). Send them straight to Gmail.</p>
+  <p class="desc">Each batch here has 8 PDFs ready (not zipped). Review every candidate before sending them straight to Gmail.</p>
   {% if incoming_batches|length == 0 %}
     <div class="empty"><div class="icon">📭</div><p>No batches submitted by Admin yet.</p></div>
   {% else %}
@@ -32,11 +32,14 @@
           <strong>Batch #{{ b['id'] }}</strong> · Authorized {{ b['date_authorized'] or '—' }}
           {% if b['emailed_at'] %}<div class="hint" style="color:var(--green);">✓ Emailed to {{ b['emailed_to'] }}</div>{% endif %}
         </div>
-        <form method="post" action="{{ url_for('receiver_send_email', batch_id=b['id']) }}" style="display:flex;gap:8px;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="email" name="to_email" placeholder="recipient@gmail.com" required style="min-width:220px;">
-          <button class="btn sm" type="submit">Send to Gmail</button>
-        </form>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <a class="btn secondary sm" href="{{ url_for('receiver_batch_detail', batch_id=b['id']) }}">Review Candidates →</a>
+          <form method="post" action="{{ url_for('receiver_send_email', batch_id=b['id']) }}" style="display:flex;gap:8px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="email" name="to_email" placeholder="recipient@gmail.com" required style="min-width:220px;">
+            <button class="btn sm" type="submit">Send to Gmail</button>
+          </form>
+        </div>
       </div>
     </div>
     {% endfor %}

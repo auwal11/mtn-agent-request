@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Batch #{{ batch['id'] }} — Receiver Review{% endblock %}
+{% block pagetitle %}Batch #{{ batch['id'] }} Review{% endblock %}
+{% block pagesub %}{{ partner['name'] if partner else '' }} · Full candidate review before sending{% endblock %}
+
+{% block content %}
+<div class="welcome-card">
+  <h2>📦 Batch #{{ batch['id'] }}</h2>
+  <p>{{ agents|length }} candidate{{ 's' if agents|length != 1 }} · Status: {{ batch['status']|replace('_',' ') }} · Review everything below before clicking "Send to Gmail".</p>
+  <div class="welcome-mini">
+    <div class="pill"><div class="n">{{ agents|length }}</div><div class="l">Candidates</div></div>
+    <div class="pill"><div class="n">{{ batch['date_authorized'] or '—' }}</div><div class="l">Authorized</div></div>
+    {% if batch['emailed_at'] %}<div class="pill"><div class="n">✓</div><div class="l">Emailed</div></div>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Batch Summary</h2>
+  <table>
+    <tr><td style="width:220px;">Company / Partner</td><td>{{ partner['name'] if partner else '—' }}</td></tr>
+    <tr><td>Status</td><td><span class="badge {{ batch['status'] }}">{{ batch['status']|replace('_',' ') }}</span></td></tr>
+    <tr><td>Created</td><td>{{ (batch['created_at'] or '—').replace('T', ' ')[:19] }}</td></tr>
+    <tr><td>Date Authorized</td><td>{{ batch['date_authorized'] or '—' }}</td></tr>
+    <tr><td>Generated</td><td>{{ (batch['generated_at'] or '—').replace('T', ' ')[:19] if batch['generated_at'] else '—' }}</td></tr>
+    <tr><td>Emailed To</td><td>{% if batch['emailed_to'] %}{{ batch['emailed_to'] }} on {{ (batch['emailed_at'] or '—').replace('T', ' ')[:19] }}{% else %}<em>Not sent yet</em>{% endif %}</td></tr>
+  </table>
+
+  <h3>Send This Batch to Gmail</h3>
+  <p class="desc" style="margin-top:-6px;">Make sure you have reviewed every candidate below before sending.</p>
+  <form method="post" action="{{ url_for('receiver_send_email', batch_id=batch['id']) }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="email" name="to_email" placeholder="recipient@gmail.com" required style="min-width:280px;flex:1;">
+    <button class="btn" type="submit">Send to Gmail</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Candidates</h2>
+  <p class="desc">Click "View" on any candidate to see their complete submitted information.</p>
+  {% if agents|length == 0 %}
+    <div class="empty"><div class="icon">📭</div><p>No candidates in this batch.</p></div>
+  {% else %}
+  <table>
+    <tr><th>#</th><th>Candidate</th><th>NIN</th><th>Phone</th><th>Outlet</th><th>Status</th><th></th></tr>
+    {% for a in agents %}
+    <tr>
+      <td>{{ a['sequence_no'] }}</td>
+      <td>{% if a['photo_path'] %}<span class="avatar"><img src="{{ url_for('uploads_preview', filename=a['photo_path']|basename) }}" alt=""></span>{% else %}<span class="avatar">{{ a['first_name'][0] if a['first_name'] else '' }}{{ a['surname'][0] if a['surname'] else '' }}</span>{% endif %}{{ a['first_name'] }} {{ a['surname'] }}</td>
+      <td>{{ a['nin'] }}</td>
+      <td>{{ a['phone_number'] }}</td>
+      <td>{{ a['outlet_name'] or '—' }}</td>
+      <td><span class="badge {{ a['status'] }}">{{ a['status']|replace('_',' ') }}</span></td>
+      <td style="text-align:right;white-space:nowrap;"><a class="btn secondary sm" href="{{ url_for('receiver_agent_detail', agent_id=a['id']) }}">View →</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  <div style="margin-top:14px;">
+    <a class="btn secondary" href="{{ url_for('receiver_dashboard') }}">← Back to Receiver Dashboard</a>
+  </div>
+</div>
+{% endblock %}

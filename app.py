@@ -571,10 +571,48 @@ def receiver_add_agent():
                             cancel_url=url_for("receiver_dashboard"))
 
 
-@app.route("/receiver/agent/<int:agent_id>", methods=["GET", "POST"])
+@app.route("/receiver/batch/<int:batch_id>")
+@login_required("receiver_admin")
+def receiver_batch_detail(batch_id):
+    batch = db.get_batch(batch_id)
+    guard = _forbid_cross_company(batch["partner_id"] if batch else None, "receiver_dashboard")
+    if guard:
+        return guard
+    if not batch:
+        flash("Couldn't find that batch.", "error")
+        return redirect(url_for("receiver_dashboard"))
+    agents = db.get_batch_agents(batch_id)
+    partner = db.get_partner(batch["partner_id"])
+    return render_template("receiver_batch_detail.html", batch=batch, agents=agents,
+                            partner=partner, min_batch_size=MIN_BATCH_SIZE)
+
+
+@app.route("/receiver/agent/<int:agent_id>")
 @login_required("receiver_admin")
 def receiver_agent_detail(agent_id):
-    return _agent_detail_view(agent_id, "receiver_dashboard")
+    agent = db.get_agent(agent_id)
+    if not agent:
+        flash("Couldn't find that candidate.", "error")
+        return redirect(url_for("receiver_dashboard"))
+    guard = _forbid_cross_company(db.agent_company_id(agent_id), "receiver_dashboard")
+    if guard:
+        return guard
+    batch = db.get_batch(agent["batch_id"])
+    if not batch:
+        flash("Couldn't find the batch for this candidate.", "error")
+        return redirect(url_for("receiver_dashboard"))
+    agents = db.get_batch_agents(batch["id"])
+    idx = 0
+    for i, a in enumerate(agents):
+        if a["id"] == agent_id:
+            idx = i
+            break
+    prev_agent = agents[idx - 1]["id"] if idx > 0 else None
+    next_agent = agents[idx + 1]["id"] if idx < len(agents) - 1 else None
+    partner = db.get_partner(batch["partner_id"])
+    return render_template("receiver_agent_detail.html", agent=agent, batch=batch,
+                            partner=partner, prev_agent=prev_agent, next_agent=next_agent,
+                            position=idx + 1, total=len(agents))
 
 
 @app.route("/receiver/agent/<int:agent_id>/delete", methods=["POST"])
