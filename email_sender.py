@@ -2,12 +2,11 @@ import os
 import smtplib
 from email.message import EmailMessage
 
-GMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS", "")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
-
 
 def send_batch_pdfs(to_email, partner_name, batch_id, pdf_dir):
-    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
+    gmail_address = os.environ.get("GMAIL_ADDRESS", "")
+    gmail_app_password = os.environ.get("GMAIL_APP_PASSWORD", "")
+    if not gmail_address or not gmail_app_password:
         return False, "GMAIL_ADDRESS / GMAIL_APP_PASSWORD are not configured on the server (environment variables)."
 
     pdf_files = sorted(f for f in os.listdir(pdf_dir) if f.lower().endswith(".pdf"))
@@ -16,7 +15,7 @@ def send_batch_pdfs(to_email, partner_name, batch_id, pdf_dir):
 
     msg = EmailMessage()
     msg["Subject"] = f"{partner_name} - Batch #{batch_id} - MTN Agent Onboarding Documents"
-    msg["From"] = GMAIL_ADDRESS
+    msg["From"] = gmail_address
     msg["To"] = to_email
     msg.set_content(
         f"Hello,\n\nPlease find the complete documents (PDF) for Batch #{batch_id} from {partner_name}.\n"
@@ -32,7 +31,7 @@ def send_batch_pdfs(to_email, partner_name, batch_id, pdf_dir):
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+            server.login(gmail_address, gmail_app_password)
             server.send_message(msg)
         return True, f"Successfully sent {len(pdf_files)} PDF(s) to {to_email}."
     except Exception as e:
