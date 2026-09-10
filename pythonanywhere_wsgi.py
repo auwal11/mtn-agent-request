@@ -32,7 +32,7 @@ import sys
 import os
 
 # ----- EDIT THIS: replace with your actual PythonAnywhere username -----
-project_home = '/home/YOURUSERNAME/mtn-agent-request'
+project_home = '/home/auwalbussines/mtn-agent-request'
 # -------------------------------------------------------------------
 
 if project_home not in sys.path:
