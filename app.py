@@ -324,6 +324,17 @@ def delete_agent(agent_id):
     flash("Agent removed from the batch.", "info")
     return redirect(url_for("admin_dashboard"))
 
+@app.route("/admin/batch/<int:batch_id>")
+@login_required("admin")
+def batch_detail(batch_id):
+    batch = db.get_batch(batch_id)
+    guard = _forbid_cross_company(batch["partner_id"] if batch else None, "admin_dashboard")
+    if guard:
+        return guard
+    agents = db.get_batch_agents(batch_id)
+    return render_template("batch_detail.html", batch=batch, agents=agents,
+                            min_batch_size=MIN_BATCH_SIZE)
+
 
 @app.route("/admin/batch/<int:batch_id>/submit", methods=["POST"])
 @login_required("admin")
@@ -351,7 +362,6 @@ def submit_batch_to_receiver(batch_id):
     db.mark_batch_sent_to_receiver(batch_id, zip_path, output_dir)
     flash("Batch submitted to the Receiver Dashboard successfully!", "success")
     return redirect(url_for("admin_dashboard"))
-
 
 @app.route("/admin/batch/<int:batch_id>/download")
 @login_required("admin")
