@@ -62,6 +62,7 @@
     {% if agents|length >= min_batch_size %}
       <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
             onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn" type="submit">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
           Submit to Receiver
@@ -95,6 +96,7 @@
         <a class="btn secondary sm" href="{{ url_for('agent_detail', agent_id=a['id']) }}">View</a>
         <form method="post" action="{{ url_for('delete_agent', agent_id=a['id']) }}" style="display:inline;"
               onsubmit="return confirm('Remove this agent from the batch?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn danger sm" type="submit">Remove</button>
         </form>
       </td>
@@ -127,6 +129,7 @@
         {% if b['status'] == 'generated' %}
           <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=b['id']) }}" style="display:inline;"
                 onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn sm" type="submit">Submit to Receiver</button>
           </form>
         {% endif %}

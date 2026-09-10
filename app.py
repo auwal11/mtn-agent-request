@@ -1,9 +1,15 @@
 import os
 import uuid
+import time
 import base64
+import secrets
+import threading
 from functools import wraps
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, send_file, flash, session
+from flask_wtf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.utils import secure_filename
 
 import database as db
 from batch_engine import generate_batch_package
@@ -16,11 +22,140 @@ os.makedirs(os.path.join(UPLOADS, "photos"), exist_ok=True)
 os.makedirs(os.path.join(UPLOADS, "signatures"), exist_ok=True)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key-in-production")
+# SECURITY: never hardcode a usable secret. If SECRET_KEY is missing we generate
+# an ephemeral one so the older default ("change-this-secret-key-in-production")
+# can never be used to forge sessions. Sessions will reset every restart until a
+# stable SECRET_KEY env var is configured.
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(32)
+# Trust the proxy-inserted client IP / scheme headers (PythonAnywhere, Render).
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+# SECURITY: secure session cookies (HTTPS-only + SameSite=Lax). Override with
+# SESSION_COOKIE_SECURE=0 only for local http testing.
+app.config.update(
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "1") == "1",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PREFERRED_URL_SCHEME="https",
+)
+# SECURITY: cap the whole request body (covers photo/signature uploads) and
+# separately validate each uploaded file's type/size (see save_upload).
+app.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024  # 4 MB per request
+
+# SECURITY: CSRF protection on every POST (must add {{ csrf_token() }} to forms).
+# WTF_CSRF_SSL_STRICT is disabled because we set Referrer-Policy: no-referrer
+# (a stricter default than the referrer-origin check), and it would otherwise
+# reject every legitimate form submission from a browser. SameSite=Lax cookies
+# plus the enforced HTTPS redirect cover the same anti-CSRF ground.
+app.config.update(WTF_CSRF_SSL_STRICT=False)
+csrf = CSRFProtect(app)
 
 MIN_BATCH_SIZE = 10
 
+
+# ------------------------------------------------------ request middleware ----
+@app.before_request
+def enforce_https():
+    if app.config.get("SESSION_COOKIE_SECURE") and not request.is_secure:
+        # Only enforce when the request actually came in over plain http.
+        if request.environ.get("wsgi.url_scheme") != "https" and \
+                request.headers.get("X-Forwarded-Proto") != "https":
+            https_url = request.url.replace("http://", "https://", 1)
+            code = 307 if request.method == "POST" else 301
+            return redirect(https_url, code=code)
+
+
+@app.after_request
+def add_security_headers(resp):
+    resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    resp.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'",
+    )
+    if (request.path.startswith(("/admin", "/receiver", "/root", "/uploads-preview"))
+            or request.endpoint in ("login",)):
+        resp.headers.setdefault("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+    return resp
+
+
+@app.errorhandler(413)
+def request_too_large(e):
+    flash("File is too large (max 4 MB per request).", "error")
+    referrer = request.referrer or url_for("home")
+    return redirect(referrer)
+
+
 db.init_db()
+
+
+# ------------------------------------------------------- security helpers ----
+def _client_ip():
+    return getattr(request, "remote_addr", None) or "unknown"
+
+
+# In-memory sliding rate limiter. PythonAnywhere serves a single app process,
+# so this is safe here; document that multi-worker deploys need an external store.
+_RL_LOCK = threading.Lock()
+_RL_HITS = {}  # key -> list of monotonic timestamps
+
+
+def _rate_limit(key, limit, window_seconds):
+    now = time.monotonic()
+    with _RL_LOCK:
+        hits = [t for t in _RL_HITS.get(key, []) if now - t < window_seconds]
+        if len(hits) >= limit:
+            _RL_HITS[key] = hits
+            return False
+        hits.append(now)
+        _RL_HITS[key] = hits
+        return True
+
+
+def _is_safe_staff_ip(remote_ip):
+    return remote_ip in ("127.0.0.1", "::1")
+
+
+ALLOWED_UPLOAD_EXT = {"png", "jpg", "jpeg", "gif", "webp", "pdf"}
+MAX_UPLOAD_BYTES = 2 * 1024 * 1024  # 2 MB per file
+
+
+# ---------------------------------------------------------------- helpers ----
+def save_upload(file_storage, subfolder, prefix, allow_pdf=False):
+    if not file_storage or file_storage.filename == "":
+        return None
+    ext = (os.path.splitext(file_storage.filename)[1] or ".png").lower().lstrip(".")
+    allowed = ALLOWED_UPLOAD_EXT if allow_pdf else (ALLOWED_UPLOAD_EXT - {"pdf"})
+    if ext not in allowed:
+        raise ValueError(f"File type .{ext} is not allowed.")
+    data = file_storage.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise ValueError(f"File is too large (max {MAX_UPLOAD_BYTES // 1024} KB).")
+    if ext == "pdf":
+        if not data.startswith(b"%PDF"):
+            raise ValueError("File is not a valid PDF.")
+    else:
+        try:
+            from PIL import Image
+            import io as _io
+            Image.open(_io.BytesIO(data)).verify()
+        except Exception:
+            raise ValueError("File is not a valid image.")
+    fname = f"{prefix}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+    path = os.path.join(UPLOADS, subfolder, fname)
+    with open(path, "wb") as f:
+        f.write(data)
+    return path
 
 
 @app.context_processor
@@ -36,24 +171,17 @@ def inject_identity():
 
 
 # ---------------------------------------------------------------- helpers ----
-def save_upload(file_storage, subfolder, prefix):
-    if not file_storage or file_storage.filename == "":
-        return None
-    ext = os.path.splitext(file_storage.filename)[1] or ".png"
-    fname = f"{prefix}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}{ext}"
-    path = os.path.join(UPLOADS, subfolder, fname)
-    file_storage.save(path)
-    return path
-
-
 def save_base64_signature(data_url, subfolder, prefix):
     if not data_url or "," not in data_url:
         return None
     header, encoded = data_url.split(",", 1)
+    raw = base64.b64decode(encoded)
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise ValueError("Signature image is too large.")
     fname = f"{prefix}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}.png"
     path = os.path.join(UPLOADS, subfolder, fname)
     with open(path, "wb") as f:
-        f.write(base64.b64decode(encoded))
+        f.write(raw)
     return path
 
 
@@ -111,6 +239,12 @@ def uploads_preview(filename):
     # realpath check below is defense-in-depth in case of symlink tricks.
     safe_name = os.path.basename(filename)
     if not safe_name or safe_name != filename.split("/")[-1]:
+        return "", 404
+    # SECURITY: root sees everything (system-wide admin). Admin/Receiver must
+    # only reach files that belong to their own company.
+    role = session.get("role")
+    company_id = session.get("company_id")
+    if role != "root" and not db.file_owned_by_company(safe_name, company_id):
         return "", 404
     for sub in ("photos", "signatures"):
         base_dir = os.path.realpath(os.path.join(UPLOADS, sub))
@@ -170,6 +304,9 @@ def home():
 
 @app.route("/submit/start", methods=["POST"])
 def submit_start():
+    if not _rate_limit(f"submit_start:{_client_ip()}", 60, 3600):
+        flash("Too many submission sessions from this device. Please try again later.", "error")
+        return redirect(url_for("home"))
     session["pending_partner_name"] = request.form.get("partner_name", "").strip()
     return redirect(url_for("submit_agent"))
 
@@ -178,15 +315,25 @@ def submit_start():
 def submit_agent():
     if not session.get("pending_partner_name"):
         return redirect(url_for("home"))
+    if request.method == "POST" and not _rate_limit(f"submit:{_client_ip()}", 30, 3600):
+        flash("Too many agent submissions from this device. Please try again later.", "error")
+        return redirect(url_for("submit_status"))
 
-    partner = db.get_or_create_active_partner()
+    # SECURITY: resolve the company from the name the user typed instead of
+    # always routing public submissions to the first partner in the database.
+    partner = db.find_partner_by_name(session.get("pending_partner_name"))
     if not partner:
-        flash("No partner has been set up for this system yet. An Admin needs to set it up first.", "error")
+        flash("We couldn't find that partner/company. Please check the name or contact your Admin.", "error")
         return redirect(url_for("home"))
 
     if request.method == "POST":
+        try:
+            data = agent_form_data(request, partner)
+        except ValueError as e:
+            flash(str(e), "error")
+            return render_template("submit_agent.html", partner=partner,
+                                    partner_name=session.get("pending_partner_name"))
         batch = db.get_or_create_draft_batch(partner["id"])
-        data = agent_form_data(request, partner)
         data["status"] = "submitted"
         data["added_by"] = "public"
         data["session_token"] = get_public_token()
@@ -210,6 +357,10 @@ def submit_status():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        ip = _client_ip()
+        if not _rate_limit(f"login:{ip}", 10, 900):
+            flash("Too many login attempts. Please wait 15 minutes and try again.", "error")
+            return render_template("login.html")
         password = request.form.get("password", "")
         user = db.find_user_by_password(password)
         if user:
@@ -258,8 +409,12 @@ def admin_dashboard():
 def partner_setup():
     existing = db.get_partner(session.get("company_id"))
     if request.method == "POST":
-        license_file = save_upload(request.files.get("ncc_license_file"), "photos", "license")
-        ceo_sig = save_upload(request.files.get("ceo_signature_file"), "signatures", "ceo_sig")
+        try:
+            license_file = save_upload(request.files.get("ncc_license_file"), "photos", "license", allow_pdf=True)
+            ceo_sig = save_upload(request.files.get("ceo_signature_file"), "signatures", "ceo_sig")
+        except ValueError as e:
+            flash(str(e), "error")
+            return render_template("partner_setup.html", partner=existing)
         if existing:
             fields = dict(
                 name=request.form["name"], dealer_code=request.form["dealer_code"],
@@ -296,7 +451,12 @@ def add_agent():
     partner = db.get_partner(session.get("company_id"))
     batch = db.get_or_create_draft_batch(partner["id"])
     if request.method == "POST":
-        data = agent_form_data(request, partner)
+        try:
+            data = agent_form_data(request, partner)
+        except ValueError as e:
+            flash(str(e), "error")
+            return render_template("add_agent.html", partner=partner, form_action=url_for("add_agent"),
+                                    cancel_url=url_for("admin_dashboard"))
         data["status"] = "confirmed"
         data["added_by"] = "admin"
         db.add_agent(batch["id"], data)
@@ -394,7 +554,12 @@ def receiver_add_agent():
     partner = db.get_partner(session.get("company_id"))
     batch = db.get_or_create_draft_batch(partner["id"])
     if request.method == "POST":
-        data = agent_form_data(request, partner)
+        try:
+            data = agent_form_data(request, partner)
+        except ValueError as e:
+            flash(str(e), "error")
+            return render_template("add_agent.html", partner=partner, form_action=url_for("receiver_add_agent"),
+                                    cancel_url=url_for("receiver_dashboard"))
         data["status"] = "confirmed"
         data["added_by"] = "receiver_admin"
         db.add_agent(batch["id"], data)
@@ -481,7 +646,10 @@ def root_create_user():
             return redirect(url_for("root_create_user"))
 
         if not password:
-            password = uuid.uuid4().hex[:10]
+            password = uuid.uuid4().hex[:12]
+        elif len(password) < 8:
+            flash("Password must be at least 8 characters long.", "error")
+            return redirect(url_for("root_create_user"))
 
         db.create_user(name, password, role, company_id, status="enabled")
         db.log_action(session.get("name"), "root", f"Created {role} account for {name}")
@@ -542,10 +710,16 @@ def _agent_detail_view(agent_id, back_endpoint):
             longitude=request.form.get("longitude", ""),
             ncc_region=request.form.get("ncc_region", ""),
         )
-        new_photo = save_upload(request.files.get("photo"), "photos", "photo")
+        new_photo = None
+        new_sig = None
+        try:
+            new_photo = save_upload(request.files.get("photo"), "photos", "photo")
+            new_sig = save_base64_signature(request.form.get("signature_data"), "signatures", "sig")
+        except ValueError as e:
+            flash(str(e), "error")
+            return render_template("agent_detail.html", agent=agent, back_endpoint=back_endpoint)
         if new_photo:
             data["photo_path"] = new_photo
-        new_sig = save_base64_signature(request.form.get("signature_data"), "signatures", "sig")
         if new_sig:
             data["signature_path"] = new_sig
         db.update_agent(agent_id, data)

@@ -14,12 +14,15 @@ HOW TO USE (PythonAnywhere free tier):
 5. Click the "WSGI configuration file" link on the Web tab, DELETE everything in it,
    and replace the contents with this file's contents below (adjusting the path
    and username). Save.
-6. Set the environment variables below (either edit them directly in this file,
-   or add them under the Web tab's "Environment variables" section):
+6. SECURITY: do NOT put secrets in this file (it lives in the repo). Set them under
+   the Web tab -> "Environment variables" section instead:
        DATA_DIR         = /home/YOURUSERNAME/mtn-agent-request/persistent_data
-       SECRET_KEY       = <any long random string>
-       ROOT_NAME        = Auwal                 (shown as the Root/CEO account name)
-       ROOT_PASSWORD    = AuwalControl           (change this to something only you know)
+       SECRET_KEY       = <any long random string>          (required — sessions are
+                            invalidated on every reload without it)
+       ROOT_NAME        = <display name of the Root/CEO account>
+       ROOT_PASSWORD    = <strong password — seeded once on first run; if missing,
+                            a random one is generated and written to
+                            DATA_DIR/root_credentials.txt>
        GMAIL_ADDRESS    = youraddress@gmail.com  (used by Receiver Admin's "Send to Gmail")
        GMAIL_APP_PASSWORD = <16-character Gmail App Password, NOT your normal Gmail password>
    Note: ADMIN_PASSWORD / RECEIVER_PASSWORD are no longer used — the Root/CEO account
@@ -41,11 +44,6 @@ if project_home not in sys.path:
 # Persistent storage location (PythonAnywhere free tier disk persists across reloads,
 # this just keeps data organized in its own folder)
 os.environ.setdefault('DATA_DIR', os.path.join(project_home, 'persistent_data'))
-os.environ.setdefault('SECRET_KEY', 'change-this-to-a-long-random-string')
-os.environ.setdefault('ROOT_NAME', 'Auwal')
-os.environ.setdefault('ROOT_PASSWORD', 'AuwalControl')
-os.environ.setdefault('GMAIL_ADDRESS', 'alhajiauwalalhaji@gmail.com')
-os.environ.setdefault('GMAIL_APP_PASSWORD', 'ivky rqye ncmh gmpt')
 
 os.makedirs(os.environ['DATA_DIR'], exist_ok=True)
 os.makedirs(os.path.join(os.environ['DATA_DIR'], 'uploads', 'photos'), exist_ok=True)

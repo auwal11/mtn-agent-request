@@ -5,6 +5,7 @@
   <h1>Welcome back</h1>
   <p class="desc">Enter your password. Secure access to your workspace.</p>
   <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Password</label>
     <input type="password" name="password" placeholder="••••••••••••" autofocus required>
     <button class="btn" type="submit">Continue</button>

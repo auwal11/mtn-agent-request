@@ -5,6 +5,7 @@
 
 {% block content %}
 <form method="post" enctype="multipart/form-data" id="agentForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="card">
     <h2>Personal Details</h2>

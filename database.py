@@ -135,23 +135,30 @@ def init_db():
     ])
 
     # --- Seed the one Root/CEO account on first run ---
+    # SECURITY: never fall back to a hardcoded default password. If ROOT_PASSWORD
+    # is not set, generate a strong random one and write it to a file inside
+    # DATA_DIR so the owner can read it once and then delete it.
     from werkzeug.security import generate_password_hash
     root_exists = conn.execute("SELECT 1 FROM users WHERE role='root' LIMIT 1").fetchone()
     if not root_exists:
-        root_name = os.environ.get("ROOT_NAME", "Auwal")
-        root_password = os.environ.get("ROOT_PASSWORD", "AuwalControl")
+        root_name = os.environ.get("ROOT_NAME", "Root")
+        root_password = os.environ.get("ROOT_PASSWORD", "")
+        if not root_password:
+            import secrets as _secrets
+            root_password = _secrets.token_urlsafe(16)
+            creds_path = os.path.join(DATA_DIR, "root_credentials.txt")
+            try:
+                with open(creds_path, "w") as f:
+                    f.write(f"name: {root_name}\npassword: {root_password}\n")
+                os.chmod(creds_path, 0o600)
+            except OSError:
+                pass
         conn.execute("""INSERT INTO users (name,password_hash,role,company_id,status,created_at)
                          VALUES (?,?,?,?,?,?)""",
                      (root_name, generate_password_hash(root_password), "root", None,
                       "active", datetime.now().isoformat()))
         conn.commit()
     conn.close()
-
-def get_or_create_active_partner():
-    conn = get_conn()
-    row = conn.execute("SELECT * FROM partners ORDER BY id LIMIT 1").fetchone()
-    conn.close()
-    return row
 
 def create_partner(name, dealer_code, region, state, lga, address, ncc_license_no,
                     ncc_license_file, stdm_name, ceo_name, ceo_signature_file):
@@ -209,6 +216,39 @@ def get_partner(partner_id):
     row = conn.execute("SELECT * FROM partners WHERE id=?", (partner_id,)).fetchone()
     conn.close()
     return row
+
+
+def find_partner_by_name(name):
+    """Returns the partner whose name matches (case-insensitive, exact)."""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM partners WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1",
+        (name,)).fetchone()
+    conn.close()
+    return row
+
+
+def file_owned_by_company(filename, company_id):
+    """True if the given upload filename belongs to an agent record (or partner
+    profile) of the given company. Used to stop staff previewing other companies'
+    photos/signatures via /uploads-preview."""
+    if not company_id:
+        return False
+    conn = get_conn()
+    row = conn.execute("""
+        SELECT 1 FROM agents a
+        JOIN batches b ON b.id = a.batch_id
+        WHERE b.partner_id=? AND (a.photo_path LIKE ? OR a.signature_path LIKE ?)
+        LIMIT 1
+    """, (company_id, f"%{filename}", f"%{filename}")).fetchone()
+    if not row:
+        row = conn.execute("""
+            SELECT 1 FROM partners WHERE id=? AND
+              (ncc_license_file LIKE ? OR ceo_signature_file LIKE ?)
+            LIMIT 1
+        """, (company_id, f"%{filename}", f"%{filename}")).fetchone()
+    conn.close()
+    return bool(row)
 
 def mark_batch_generated(batch_id, output_zip):
     conn = get_conn()

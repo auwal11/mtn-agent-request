@@ -39,6 +39,7 @@
       <td style="text-align:right;white-space:nowrap;">
         {% for s,label in [('enabled','Enable'),('disabled','Disable'),('revoked','Revoke'),('enabled','Reactivate')] %}
         <form method="post" action="{{ url_for('root_set_user_status', user_id=u['id']) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="status" value="{{ s }}">
           <button class="btn secondary sm" type="submit">{{ label }}</button>
         </form>
@@ -65,6 +66,7 @@
       <td style="text-align:right;white-space:nowrap;">
         {% for s,label in [('enabled','Enable'),('disabled','Disable'),('revoked','Revoke'),('enabled','Reactivate')] %}
         <form method="post" action="{{ url_for('root_set_user_status', user_id=u['id']) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="status" value="{{ s }}">
           <button class="btn secondary sm" type="submit">{{ label }}</button>
         </form>

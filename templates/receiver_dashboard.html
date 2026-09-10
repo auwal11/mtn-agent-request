@@ -33,6 +33,7 @@
           {% if b['emailed_at'] %}<div class="hint" style="color:var(--green);">✓ Emailed to {{ b['emailed_to'] }}</div>{% endif %}
         </div>
         <form method="post" action="{{ url_for('receiver_send_email', batch_id=b['id']) }}" style="display:flex;gap:8px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="email" name="to_email" placeholder="recipient@gmail.com" required style="min-width:220px;">
           <button class="btn sm" type="submit">Send to Gmail</button>
         </form>
@@ -61,6 +62,7 @@
         <a class="btn secondary sm" href="{{ url_for('receiver_agent_detail', agent_id=a['id']) }}">View</a>
         <form method="post" action="{{ url_for('receiver_delete_agent', agent_id=a['id']) }}" style="display:inline;"
               onsubmit="return confirm('Remove this agent?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn danger sm" type="submit">Remove</button>
         </form>
       </td>

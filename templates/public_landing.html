@@ -5,6 +5,7 @@
   <h1>Agent Registration</h1>
   <p class="desc">Enter your company/partner name to start adding agents for SIM registration.</p>
   <form method="post" action="{{ url_for('submit_start') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Partner / Company Name</label>
     <input type="text" name="partner_name" placeholder="e.g. Muktar Communication" required>
     <button class="btn" type="submit">Continue → Add Agent</button>

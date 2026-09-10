@@ -8,6 +8,7 @@
   <h2>Partner Profile</h2>
   <p class="desc">This is done once. Values that don't change from batch to batch (STDM name, CEO/MD signature, NCC License) are stored here. You can come back and update the license anytime.</p>
   <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Partner Name</label>
     <input name="name" required placeholder="RACU INTERNATIONAL LTD" value="{{ partner['name'] if partner else '' }}">
 
