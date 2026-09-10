@@ -38,7 +38,7 @@
     {% for a in agents %}
     <tr>
       <td>{{ a['sequence_no'] }}</td>
-      <td><span class="avatar">{{ a['first_name'][0] }}{{ a['surname'][0] }}</span>{{ a['first_name'] }} {{ a['surname'] }}</td>
+      <td>{% if a['photo_path'] %}<span class="avatar"><img src="{{ url_for('uploads_preview', filename=a['photo_path']|basename) }}" alt=""></span>{% else %}<span class="avatar">{{ a['first_name'][0] }}{{ a['surname'][0] }}</span>{% endif %}{{ a['first_name'] }} {{ a['surname'] }}</td>
       <td>{{ a['nin'] }}</td>
       <td>{{ a['phone_number'] }}</td>
       <td>{{ a['device_tag_id'] }}</td>
