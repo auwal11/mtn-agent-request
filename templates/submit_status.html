@@ -1,9 +1,9 @@
 {% extends "public_base.html" %}
-{% block title %}Status na Submission{% endblock %}
+{% block title %}Submission Status{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Status na Submission ɗinka</h1>
-  <p class="desc">Waɗannan su ne agent ɗin da ka tura daga wannan na'ura/browser.</p>
+  <h1>Your Submission Status</h1>
+  <p class="desc">These are the agents you've submitted from this device/browser.</p>
   {% if my_agents %}
     {% for a in my_agents %}
     <div class="agent-row">
@@ -15,7 +15,7 @@
     </div>
     {% endfor %}
   {% else %}
-    <p class="desc">Ba ka riga ka tura wani agent ba tukuna.</p>
+    <p class="desc">You haven't submitted any agent yet.</p>
   {% endif %}
   <a class="btn" href="{{ url_for('home') }}">+ Add Another Agent</a>
 </div>
