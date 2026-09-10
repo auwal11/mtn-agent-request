@@ -61,7 +61,7 @@
     </div>
     {% if agents|length >= min_batch_size %}
       <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
-            onsubmit="return confirm('Tura wannan batch din zuwa Receiver Dashboard?');">
+            onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
         <button class="btn" type="submit">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
           Submit to Receiver
@@ -106,22 +106,23 @@
 
 <div class="card">
   <h2>Batch History</h2>
-  <p class="desc">Previously generated packages remain available for download.</p>
+  <p class="desc">Completed batches — submitted straight to the Receiver Dashboard.</p>
   {% if all_batches|length == 0 %}
     <div class="empty"><p>No batches yet.</p></div>
   {% else %}
   <table>
-    <tr><th>Batch</th><th>Status</th><th>Date Authorized</th><th></th></tr>
+    <tr><th>Batch</th><th>Status</th><th>Date Authorized</th></tr>
     {% for b in all_batches %}
     <tr>
       <td>#{{ b['id'] }}</td>
-      <td><span class="badge {{ 'generated' if b['status']=='sent_to_receiver' else b['status'] }}">{{ b['status']|replace('_',' ') }}</span></td>
-      <td>{{ b['date_authorized'] or '—' }}</td>
-      <td style="text-align:right;">
-        {% if b['status'] == 'sent_to_receiver' %}
-          <a class="btn secondary sm" href="{{ url_for('download_batch', batch_id=b['id']) }}">Download ZIP (archive)</a>
+      <td>
+        {% if b['status'] in ('sent_to_receiver', 'generated') %}
+          <span class="badge confirmed">Complete</span>
+        {% else %}
+          <span class="badge {{ b['status'] }}">{{ b['status']|capitalize }}</span>
         {% endif %}
       </td>
+      <td>{{ b['date_authorized'] or '—' }}</td>
     </tr>
     {% endfor %}
   </table>
