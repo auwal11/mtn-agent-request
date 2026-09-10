@@ -66,10 +66,10 @@ def login_required(role=None):
             user = db.get_user(session["user_id"])
             if not user or user["status"] not in ("enabled", "active"):
                 session.clear()
-                flash("An dakatar da damar shiga asusunka. Tuntuɓi Root/CEO.", "error")
+                flash("Your account access has been suspended. Contact the Root/CEO.", "error")
                 return redirect(url_for("login"))
             if role and session.get("role") != role:
-                flash("Ba ka da izinin shiga wannan shafin.", "error")
+                flash("You don't have permission to access this page.", "error")
                 return redirect(url_for("login"))
             return f(*args, **kwargs)
         return wrapped
@@ -181,7 +181,7 @@ def submit_agent():
 
     partner = db.get_or_create_active_partner()
     if not partner:
-        flash("Ba a saita partner na tsarin ba tukuna. Admin ne zai fara saita shi.", "error")
+        flash("No partner has been set up for this system yet. An Admin needs to set it up first.", "error")
         return redirect(url_for("home"))
 
     if request.method == "POST":
@@ -192,7 +192,7 @@ def submit_agent():
         data["session_token"] = get_public_token()
         data["submitted_partner_name"] = session.get("pending_partner_name", "")
         db.add_agent(batch["id"], data)
-        flash(f"An karɓi bayanan {data['first_name']} {data['surname']} cikin nasara!", "success")
+        flash(f"{data['first_name']} {data['surname']}'s details were received successfully!", "success")
         return redirect(url_for("submit_status"))
 
     return render_template("submit_agent.html", partner=partner,
@@ -227,7 +227,7 @@ def login():
             else:
                 return redirect(url_for("receiver_dashboard"))
         else:
-            flash("Kalmar sirri ba daidai ba ce.", "error")
+            flash("Incorrect password.", "error")
     return render_template("login.html")
 
 
@@ -423,10 +423,10 @@ def receiver_send_email(batch_id):
     partner = db.get_partner(session.get("company_id"))
     to_email = request.form.get("to_email", "").strip()
     if not batch["output_dir"] or not os.path.exists(batch["output_dir"]):
-        flash("Ba a sami fayilolin wannan batch din ba.", "error")
+        flash("Couldn't find the files for this batch.", "error")
         return redirect(url_for("receiver_dashboard"))
     if not to_email:
-        flash("Da fatan za a rubuta adireshin email.", "error")
+        flash("Please enter a recipient email address.", "error")
         return redirect(url_for("receiver_dashboard"))
 
     ok, message = send_batch_pdfs(to_email, partner["name"], batch_id, batch["output_dir"])
@@ -467,7 +467,7 @@ def root_create_user():
             company_id = company["id"]
 
         if not company_id:
-            flash("Da fatan za a zaɓi ko ƙirƙiri kamfani (company) domin wannan asusun.", "error")
+            flash("Please choose or create a company for this account.", "error")
             return redirect(url_for("root_create_user"))
 
         if not password:
@@ -475,7 +475,7 @@ def root_create_user():
 
         db.create_user(name, password, role, company_id, status="enabled")
         db.log_action(session.get("name"), "root", f"Created {role} account for {name}")
-        flash(f"An ƙirƙiri asusun {name} cikin nasara. Kalmar sirri: {password} (ka rubuta/ka aike masa yanzu, ba za a sake nuna ta ba).", "success")
+        flash(f"Account for {name} created successfully. Password: {password} (write it down or send it to them now — it won't be shown again).", "success")
         return redirect(url_for("root_dashboard"))
 
     return render_template("root_create_user.html", companies=companies)
@@ -486,15 +486,15 @@ def root_create_user():
 def root_set_user_status(user_id):
     new_status = request.form.get("status")
     if new_status not in ("enabled", "active", "disabled", "revoked"):
-        flash("Status ɗin ba daidai ba ne.", "error")
+        flash("invalid status.", "error")
         return redirect(url_for("root_dashboard"))
     target = db.get_user(user_id)
     if not target:
-        flash("Ba a sami wannan user ɗin ba.", "error")
+        flash("Couldn't find that user.", "error")
         return redirect(url_for("root_dashboard"))
     db.set_user_status(user_id, new_status)
     db.log_action(session.get("name"), "root", f"Set {target['name']}'s status to {new_status}")
-    flash(f"An sabunta status ɗin {target['name']} zuwa {new_status}.", "success")
+    flash(f"{target['name']}'s status has been updated to {new_status}.", "success")
     return redirect(url_for("root_dashboard"))
 
 
@@ -502,7 +502,7 @@ def root_set_user_status(user_id):
 def _agent_detail_view(agent_id, back_endpoint):
     agent = db.get_agent(agent_id)
     if not agent:
-        flash("Ba a sami wannan agent din ba.", "error")
+        flash("Couldn't find that agent.", "error")
         return redirect(url_for(back_endpoint))
     guard = _forbid_cross_company(db.agent_company_id(agent_id), back_endpoint)
     if guard:
