@@ -127,6 +127,7 @@ def init_db():
         ("added_by", "TEXT DEFAULT 'admin'"),
         ("session_token", "TEXT"),
         ("submitted_partner_name", "TEXT"),
+        ("prev_status_before_submit", "TEXT"),
     ])
     ensure_columns("batches", [
         ("output_dir", "TEXT"),
@@ -262,7 +263,34 @@ def mark_batch_sent_to_receiver(batch_id, output_zip, output_dir):
     conn.execute("""UPDATE batches SET status='sent_to_receiver', generated_at=?,
                      output_zip=?, output_dir=? WHERE id=?""",
                  (datetime.now().isoformat(), output_zip, output_dir, batch_id))
-    conn.execute("UPDATE agents SET status='confirmed' WHERE batch_id=?", (batch_id,))
+    # Remember each agent's status before the submission forces 'confirmed', so a
+    # Root system-reset can restore the exact prior state (SQLite computes all
+    # SET expressions from the pre-update row, so prev_status gets the old value).
+    conn.execute("""UPDATE agents SET status='confirmed',
+                     prev_status_before_submit = COALESCE(prev_status_before_submit, status)
+                     WHERE batch_id=?""", (batch_id,))
+    conn.commit()
+    conn.close()
+
+def reset_batch_submission(batch_id):
+    """Root-only: reverse an Admin→Receiver submission. Returns the batch to
+    'draft', removes it from the Receiver's received list, clears the authorized
+    date and any email record, and restores each agent's pre-submission status.
+    Generated files are kept referenced on disk (never deleted) so no PDFs are
+    orphaned."""
+    conn = get_conn()
+    conn.execute("""UPDATE agents SET status = COALESCE(prev_status_before_submit, 'submitted'),
+                     prev_status_before_submit = NULL WHERE batch_id=?""", (batch_id,))
+    conn.execute("""UPDATE batches SET status='draft', date_authorized=NULL,
+                     emailed_at=NULL, emailed_to=NULL WHERE id=?""", (batch_id,))
+    conn.commit()
+    conn.close()
+
+def reset_batch_email(batch_id):
+    """Root-only: clear a Receiver's emailed record so the Receiver dashboard
+    returns to its pre-send state. The batch stays in the received list."""
+    conn = get_conn()
+    conn.execute("UPDATE batches SET emailed_at=NULL, emailed_to=NULL WHERE id=?", (batch_id,))
     conn.commit()
     conn.close()
 

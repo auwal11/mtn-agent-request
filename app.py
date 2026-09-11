@@ -660,8 +660,45 @@ def root_dashboard():
     admins = db.list_users("admin")
     receivers = db.list_users("receiver_admin")
     companies = db.list_companies()
+    received_batches = []
+    for b in db.list_batches_for_receiver(None):
+        item = dict(b)
+        partner = db.get_partner(b["partner_id"])
+        item["company_name"] = partner["name"] if partner else f"Partner #{b['partner_id']}"
+        received_batches.append(item)
     return render_template("root_dashboard.html", counts=counts, activity=activity,
-                            admins=admins, receivers=receivers, companies=companies, role="root")
+                            admins=admins, receivers=receivers, companies=companies,
+                            received_batches=received_batches, role="root")
+
+
+@app.route("/root/system/reset", methods=["POST"])
+@login_required("root")
+def root_system_reset():
+    # SECURITY: Root-only route. Reverses Admin⇄Receiver activity silently —
+    # no email/notification is sent to either side; the reset is logged to the
+    # internal audit trail (visible only on the Root dashboard).
+    batch_id = request.form.get("batch_id", type=int)
+    action = request.form.get("action", "")
+    batch = db.get_batch(batch_id) if batch_id else None
+    if not batch or batch["status"] != "sent_to_receiver":
+        flash("That batch cannot be reset right now.", "error")
+        return redirect(url_for("root_dashboard"))
+    partner = db.get_partner(batch["partner_id"])
+    where = partner["name"] if partner else f"Partner #{batch['partner_id']}"
+
+    if action == "submission":
+        db.reset_batch_submission(batch_id)
+        db.log_action(session.get("name"), "root",
+                      f"SYSTEM RESET: reversed Admin→Receiver submission of Batch #{batch_id} ({where}) back to draft")
+        flash(f"Batch #{batch_id} ({where}) submission reset back to draft. It was removed from the Receiver list.", "success")
+    elif action == "email":
+        db.reset_batch_email(batch_id)
+        db.log_action(session.get("name"), "root",
+                      f"SYSTEM RESET: cleared emailed status of Batch #{batch_id} ({where})")
+        flash(f"Batch #{batch_id} ({where}) email activity cleared. Receiver dashboard returned to pre-send state.", "success")
+    else:
+        flash("Unknown reset action.", "error")
+    return redirect(url_for("root_dashboard"))
 
 
 @app.route("/root/users/create", methods=["GET", "POST"])

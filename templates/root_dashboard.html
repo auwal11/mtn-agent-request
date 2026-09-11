@@ -93,6 +93,44 @@
 </div>
 
 <div class="card">
+  <h2>System Reset Controls</h2>
+  <p class="desc">Root-only. Silently reverse Admin ⇄ Receiver activity. No notifications are sent to either side; resets are logged internally for your audit.</p>
+  {% if received_batches|length == 0 %}
+    <div class="empty"><p>No Admin→Receiver submissions right now.</p></div>
+  {% else %}
+  <table>
+    <tr><th>Batch</th><th>Company</th><th>Authorized</th><th>Email Activity</th><th></th></tr>
+    {% for b in received_batches %}
+    <tr>
+      <td>#{{ b['id'] }}</td>
+      <td>{{ b['company_name'] }}</td>
+      <td>{{ b['date_authorized'] or '—' }}</td>
+      <td>{% if b['emailed_at'] %}<span class="badge generated">Emailed → {{ b['emailed_to'] }}</span>{% else %}<span class="badge draft">Not emailed</span>{% endif %}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <form method="post" action="{{ url_for('root_system_reset') }}" style="display:inline;"
+              onsubmit="return confirm('Reset the submission of Batch #{{ b['id'] }} ({{ b['company_name'] }})? It will be removed from the Receiver list, sent back to the Admin as a draft, and any email activity will be cleared.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="batch_id" value="{{ b['id'] }}">
+          <input type="hidden" name="action" value="submission">
+          <button class="btn secondary sm" type="submit">Reset Submission</button>
+        </form>
+        {% if b['emailed_at'] %}
+        <form method="post" action="{{ url_for('root_system_reset') }}" style="display:inline; margin-left:6px;"
+              onsubmit="return confirm('Clear the emailed status of Batch #{{ b['id'] }}? The Receiver dashboard will return to its normal pre-send state.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="batch_id" value="{{ b['id'] }}">
+          <input type="hidden" name="action" value="email">
+          <button class="btn danger sm" type="submit">Reset Email Activity</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
   <h2>Recent System Activity</h2>
   {% if activity|length == 0 %}
     <div class="empty"><p>No activity logged yet.</p></div>
