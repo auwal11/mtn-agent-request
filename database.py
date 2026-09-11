@@ -173,11 +173,32 @@ def create_partner(name, dealer_code, region, state, lga, address, ncc_license_n
     conn.commit()
     conn.close()
 
-def get_or_create_draft_batch(partner_id):
+def count_batch_agents(batch_id):
     conn = get_conn()
-    row = conn.execute(
-        "SELECT * FROM batches WHERE partner_id=? AND status='draft' ORDER BY id DESC LIMIT 1",
-        (partner_id,)).fetchone()
+    n = conn.execute("SELECT COUNT(*) c FROM agents WHERE batch_id=?", (batch_id,)).fetchone()["c"]
+    conn.close()
+    return n
+
+
+def get_or_create_draft_batch(partner_id):
+    """Returns the "current active" draft batch for a partner.
+
+    Prefers the most recent draft that still contains agents, so that when a
+    submitted batch is reverted by the Root (System Reset) it immediately
+    becomes the active batch again and the Admin sees its real agent count /
+    Submit status. Falls back to the latest (possibly empty) draft, creating
+    one when none exists. Agents are never duplicated and no batch is created
+    unless there is genuinely no draft available."""
+    conn = get_conn()
+    row = conn.execute("""
+        SELECT b.* FROM batches b
+        WHERE b.partner_id=? AND b.status='draft'
+          AND EXISTS (SELECT 1 FROM agents a WHERE a.batch_id = b.id)
+        ORDER BY b.id DESC LIMIT 1""", (partner_id,)).fetchone()
+    if row is None:
+        row = conn.execute(
+            "SELECT * FROM batches WHERE partner_id=? AND status='draft' ORDER BY id DESC LIMIT 1",
+            (partner_id,)).fetchone()
     if row is None:
         conn.execute("INSERT INTO batches (partner_id,status,created_at) VALUES (?,?,?)",
                       (partner_id, 'draft', datetime.now().isoformat()))
@@ -422,7 +443,9 @@ def delete_agent(agent_id):
 
 def list_batches(partner_id):
     conn = get_conn()
-    rows = conn.execute("SELECT * FROM batches WHERE partner_id=? ORDER BY id DESC", (partner_id,)).fetchall()
+    rows = conn.execute("""
+        SELECT b.*, (SELECT COUNT(*) FROM agents a WHERE a.batch_id = b.id) AS agent_count
+        FROM batches b WHERE b.partner_id=? ORDER BY b.id DESC""", (partner_id,)).fetchall()
     conn.close()
     return rows
 

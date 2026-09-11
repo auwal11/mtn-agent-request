@@ -26,19 +26,22 @@
     <div class="empty"><div class="icon">📭</div><p>No batches submitted by Admin yet.</p></div>
   {% else %}
     {% for b in incoming_batches %}
+    {% set bst = batch_status(b) %}
     <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
         <div>
-          <strong>Batch #{{ b['id'] }}</strong> · Authorized {{ b['date_authorized'] or '—' }}
-          {% if b['emailed_at'] %}<div class="hint" style="color:var(--green);">✓ Emailed to {{ b['emailed_to'] }}</div>{% endif %}
+          <strong>Batch #{{ b['id'] }}</strong> · <span class="badge {{ bst.cls }}">{{ bst.label }}</span> · Authorized {{ b['date_authorized'] or '—' }}
+          {% if b['emailed_at'] %}<div class="hint" style="color:var(--green);">✓ Emailed to {{ b['emailed_to'] }} on {{ (b['emailed_at'] or '').replace('T', ' ')[:19] }}</div>{% endif %}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <a class="btn secondary sm" href="{{ url_for('receiver_batch_detail', batch_id=b['id']) }}">Review Candidates →</a>
+          {% if not b['emailed_at'] %}
           <form method="post" action="{{ url_for('receiver_send_email', batch_id=b['id']) }}" style="display:flex;gap:8px;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="email" name="to_email" placeholder="recipient@gmail.com" required style="min-width:220px;">
             <button class="btn sm" type="submit">Send to Gmail</button>
           </form>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -52,6 +55,7 @@
   {% if not agents %}
     <div class="empty"><p>No agents in the draft batch yet.</p></div>
   {% else %}
+  <div class="table-scroll">
   <table>
     <tr><th>#</th><th>Agent</th><th>Phone</th><th>Outlet</th><th>Status</th><th></th></tr>
     {% for a in agents %}
@@ -72,6 +76,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

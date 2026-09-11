@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Batch #{{ batch['id'] }} — {{ company_name }}{% endblock %}
 {% block pagetitle %}Batch #{{ batch['id'] }}{% endblock %}
-{% block pagesub %}Status: {{ batch['status']|capitalize }} · Authorized {{ batch['date_authorized'] or '—' }}{% endblock %}
+{% block pagesub %}{% set st = batch_status(batch) %}<span class="badge {{ st.cls }}">{{ st.label }}</span> · Authorized {{ batch['date_authorized'] or '—' }}{% endblock %}
 {% block topbar_action %}
   <a class="btn secondary" href="{{ url_for('admin_dashboard') }}">← Back to Dashboard</a>
 {% endblock %}
@@ -13,27 +13,28 @@
       <h2>Agents in this Batch</h2>
       <p class="desc">{{ agents|length }} agent(s) total.</p>
     </div>
-    {% if batch['status'] not in ('sent_to_receiver',) %}
-      {% if agents|length >= min_batch_size %}
-        <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
-              onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if batch['status'] != 'sent_to_receiver' %}
+      <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
+            onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if agents|length >= min_batch_size %}
           <button class="btn" type="submit">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
             Submit to Receiver
           </button>
-        </form>
-      {% else %}
-        <button class="btn" disabled>Submit to Receiver — need {{ min_batch_size - agents|length }} more</button>
-      {% endif %}
+        {% else %}
+          <button class="btn" type="submit" disabled>Submit to Receiver — need {{ min_batch_size - agents|length }} more</button>
+        {% endif %}
+      </form>
     {% else %}
-      <span class="badge confirmed">Already sent to Receiver</span>
+      <span class="badge submitted">Already submitted to Receiver</span>
     {% endif %}
   </div>
 
   {% if agents|length == 0 %}
     <div class="empty"><p>No agents in this batch.</p></div>
   {% else %}
+  <div class="table-scroll">
   <table>
     <tr><th>#</th><th>Agent</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th>Status</th><th>Source</th><th></th></tr>
     {% for a in agents %}
@@ -52,6 +53,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}

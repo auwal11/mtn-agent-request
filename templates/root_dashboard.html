@@ -99,12 +99,14 @@
     <div class="empty"><p>No Admin→Receiver submissions right now.</p></div>
   {% else %}
   <table>
-    <tr><th>Batch</th><th>Company</th><th>Authorized</th><th>Email Activity</th><th></th></tr>
+    <tr><th>Batch</th><th>Company</th><th>Authorized</th><th>Status</th><th>Email Activity</th><th></th></tr>
     {% for b in received_batches %}
+    {% set bst = batch_status(b) %}
     <tr>
       <td>#{{ b['id'] }}</td>
       <td>{{ b['company_name'] }}</td>
       <td>{{ b['date_authorized'] or '—' }}</td>
+      <td><span class="badge {{ bst.cls }}">{{ bst.label }}</span></td>
       <td>{% if b['emailed_at'] %}<span class="badge generated">Emailed → {{ b['emailed_to'] }}</span>{% else %}<span class="badge draft">Not emailed</span>{% endif %}</td>
       <td style="text-align:right;white-space:nowrap;">
         <form method="post" action="{{ url_for('root_system_reset') }}" style="display:inline;"

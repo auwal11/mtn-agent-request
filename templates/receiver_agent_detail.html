@@ -166,7 +166,7 @@
     {{ field('Submission Date / Time', (agent['created_at'] or '').replace('T', ' ')[:19]) }}
     {{ field('Added By', agent['submitted_partner_name'] or agent['added_by']) }}
     {{ field('Batch ID', batch['id']) }}
-    {{ field('Batch Status', batch['status']) }}
+    {{ field('Batch Status', batch_status(batch)['label']) }}
     {{ field('Batch Created', (batch['created_at'] or '').replace('T', ' ')[:19]) }}
     {{ field('Date Authorized', batch['date_authorized']) }}
     {% if batch['emailed_at'] %}{{ field('Emailed To', batch['emailed_to'] ~ ' on ' ~ batch['emailed_at'].replace('T', ' ')[:19]) }}{% endif %}

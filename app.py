@@ -170,6 +170,42 @@ def inject_identity():
                 company_name=company_name or "Workspace")
 
 
+_BATCH_DISPLAY = {
+    "draft": ("DRAFT", "draft"),
+    "ready": ("READY", "ready"),
+    "submitted": ("SUBMITTED", "submitted"),
+    "completed": ("COMPLETED", "completed"),
+}
+
+
+@app.context_processor
+def inject_batch_status():
+    """Derives the single source of truth for how a batch is shown in every
+    dashboard (Admin, Receiver, Root) so the displayed status always matches the
+    real database state:
+      - emailed to an external address ......... COMPLETED
+      - status sent_to_receiver ................ SUBMITTED
+      - legacy status generated ................ COMPLETED
+      - still draft with >=MIN agents .......... READY
+      - still draft (any other agent count) .... DRAFT"""
+    def _batch_status(batch):
+        if not batch:
+            return {"key": "draft", "label": "DRAFT", "cls": "draft"}
+        if batch["emailed_at"]:
+            key = "completed"
+        elif batch["status"] == "sent_to_receiver":
+            key = "submitted"
+        elif batch["status"] == "generated":
+            key = "completed"
+        elif batch["status"] == "draft":
+            key = "ready" if db.count_batch_agents(batch["id"]) >= MIN_BATCH_SIZE else "draft"
+        else:
+            key = batch["status"] or "draft"
+        label, cls = _BATCH_DISPLAY.get(key, (str(key).upper().replace("_", " "), str(key)))
+        return {"key": key, "label": label, "cls": cls}
+    return dict(batch_status=_batch_status)
+
+
 # ---------------------------------------------------------------- helpers ----
 def save_base64_signature(data_url, subfolder, prefix):
     if not data_url or "," not in data_url:
@@ -400,8 +436,11 @@ def admin_dashboard():
     batch = db.get_or_create_draft_batch(partner["id"])
     agents = db.get_batch_agents(batch["id"])
     all_batches = db.list_batches(partner["id"])
+    submitted_count = sum(
+        1 for b in all_batches if b["status"] == "sent_to_receiver" or b["emailed_at"])
     return render_template("index.html", partner=partner, batch=batch, agents=agents,
-                            min_batch_size=MIN_BATCH_SIZE, all_batches=all_batches, role="admin")
+                            min_batch_size=MIN_BATCH_SIZE, all_batches=all_batches,
+                            submitted_count=submitted_count, role="admin")
 
 
 @app.route("/admin/partner/setup", methods=["GET", "POST"])

@@ -12,21 +12,23 @@
 {% block content %}
 {% set remaining = min_batch_size - agents|length %}
 {% set pct = ((agents|length / min_batch_size) * 100) if agents|length < min_batch_size else 100 %}
+{% set st = batch_status(batch) %}
+{% set can_submit = agents|length >= min_batch_size %}
 
 <div class="welcome-card">
   <h2>✨ Welcome back, {{ current_user_name }}</h2>
   <p>Your workspace is ready. Here's what needs your attention.</p>
   <div class="welcome-mini">
-    <div class="pill"><div class="n">{{ agents|length }}</div><div class="l">Agents</div></div>
-    <div class="pill"><div class="n">{{ agents|selectattr('status','equalto','submitted')|list|length }}</div><div class="l">Pending</div></div>
+    <div class="pill"><div class="n">{{ agents|length }}</div><div class="l">Agents in active batch</div></div>
+    <div class="pill"><div class="n">{{ submitted_count }}</div><div class="l">Batches sent</div></div>
   </div>
 </div>
 
 <div class="stat-row">
   <div class="stat">
-    <div class="label">Current Batch</div>
+    <div class="label">Current Active Batch</div>
     <div class="value">#{{ batch['id'] }}</div>
-    <div class="hint">Status: {{ batch['status']|capitalize }}</div>
+    <div class="hint"><span class="badge {{ st.cls }}">{{ st.label }}</span></div>
   </div>
   <div class="stat">
     <div class="label">Agents in Batch</div>
@@ -34,43 +36,56 @@
     <div class="progress-track"><div class="progress-fill" style="width:{{ pct }}%"></div></div>
   </div>
   <div class="stat">
-    <div class="label">Ready to Generate</div>
-    <div class="value" style="color: {{ 'var(--green)' if agents|length >= min_batch_size else 'var(--muted)' }}">
-      {{ "Yes" if agents|length >= min_batch_size else "Not yet" }}
+    <div class="label">Batch Status</div>
+    <div class="value" style="color: {{ 'var(--green)' if can_submit else 'var(--muted)' }}">
+      {{ "Ready to submit" if can_submit else "Building batch" }}
     </div>
     <div class="hint">
-      {% if agents|length >= min_batch_size %}
-        All 7 forms + license ready to package
+      {% if can_submit %}
+        Minimum {{ min_batch_size }} agents reached — submit when ready
       {% else %}
-        {{ remaining }} more agent(s) needed
+        {{ remaining }} more agent(s) needed to reach {{ min_batch_size }}
       {% endif %}
     </div>
   </div>
   <div class="stat">
     <div class="label">Completed Batches</div>
-    <div class="value">{{ all_batches|selectattr('status','equalto','sent_to_receiver')|list|length }}</div>
+    <div class="value">{{ submitted_count }}</div>
     <div class="hint">Total packages submitted to receiver</div>
   </div>
 </div>
 
 <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
     <div>
-      <h2>Agents in Batch #{{ batch['id'] }}</h2>
-      <p class="desc">Every agent added here appears in Forms 1–7 once the batch is generated.</p>
+      <h2 style="margin:0;">Current Active Batch</h2>
+      <p class="desc" style="margin:2px 0 0;">Batch #{{ batch['id'] }} · <span class="badge {{ st.cls }}">{{ st.label }}</span> · {{ agents|length }} of {{ min_batch_size }} agents</p>
     </div>
-    {% if agents|length >= min_batch_size %}
-      <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
-            onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn" type="submit">
+    <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=batch['id']) }}"
+          onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if can_submit %}
+        <button class="btn" type="submit" title="Submit all {{ agents|length }} agents to the Receiver Dashboard">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
           Submit to Receiver
         </button>
-      </form>
-    {% else %}
-      <button class="btn" disabled>Submit to Receiver — need {{ remaining }} more</button>
-    {% endif %}
+      {% else %}
+        <button class="btn" type="submit" disabled title="Add {{ remaining }} more agent(s) to enable submission">
+          Submit to Receiver — need {{ remaining }} more
+        </button>
+      {% endif %}
+    </form>
+  </div>
+  <div class="progress-track" style="margin-top:14px;"><div class="progress-fill" style="width:{{ pct }}%"></div></div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="margin:0;">Agents in Current Batch</h2>
+      <p class="desc" style="margin:2px 0 0;">Every agent added here appears in Forms 1–7 once the batch is generated.</p>
+    </div>
+    <a class="btn secondary" href="{{ url_for('add_agent') }}">+ Add Agent</a>
   </div>
 
   {% if agents|length == 0 %}
@@ -80,6 +95,7 @@
       <a class="btn" href="{{ url_for('add_agent') }}" style="margin-top:6px;">Add Agent</a>
     </div>
   {% else %}
+  <div class="table-scroll">
   <table>
     <tr><th>#</th><th>Agent</th><th>NIN</th><th>Phone</th><th>Device Tag</th><th>Outlet</th><th>Status</th><th>Source</th><th></th></tr>
     {% for a in agents %}
@@ -103,6 +119,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% endif %}
 </div>
 <div class="card">
@@ -111,32 +128,23 @@
   {% if all_batches|length == 0 %}
     <div class="empty"><p>No batches yet.</p></div>
   {% else %}
+  <div class="table-scroll">
   <table>
-    <tr><th>Batch</th><th>Status</th><th>Date Authorized</th><th></th></tr>
+    <tr><th>Batch</th><th>Status</th><th>Agents</th><th>Date Authorized</th><th></th></tr>
     {% for b in all_batches %}
+    {% set bst = batch_status(b) %}
     <tr>
       <td>#{{ b['id'] }}</td>
-      <td>
-        {% if b['status'] in ('sent_to_receiver', 'generated') %}
-          <span class="badge confirmed">Complete</span>
-        {% else %}
-          <span class="badge {{ b['status'] }}">{{ b['status']|capitalize }}</span>
-        {% endif %}
-      </td>
+      <td><span class="badge {{ bst.cls }}">{{ bst.label }}</span></td>
+      <td>{{ b['agent_count'] }} agent(s)</td>
       <td>{{ b['date_authorized'] or '—' }}</td>
       <td style="text-align:right;white-space:nowrap;">
         <a class="btn secondary sm" href="{{ url_for('batch_detail', batch_id=b['id']) }}">View</a>
-        {% if b['status'] == 'generated' %}
-          <form method="post" action="{{ url_for('submit_batch_to_receiver', batch_id=b['id']) }}" style="display:inline;"
-                onsubmit="return confirm('Submit this batch to the Receiver Dashboard?');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn sm" type="submit">Submit to Receiver</button>
-          </form>
-        {% endif %}
       </td>
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% endif %}
 </div>
 {% endblock %}
